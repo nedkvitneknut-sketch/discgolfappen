@@ -1,4 +1,6 @@
 <title>Discbaggen</title>
+<link rel="apple-touch-icon" sizes="180x180" href="__ICON180__">
+<link rel="icon" type="image/png" sizes="32x32" href="__ICON32__">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
@@ -245,8 +247,30 @@ form{display:flex;flex-direction:column;gap:16px}
 .ripple{transform-box:fill-box;transform-origin:center;animation:ripple 1s cubic-bezier(.2,.8,.2,1) forwards;stroke-width:1.5}
 @keyframes ripple{from{transform:scale(1);opacity:.8}to{transform:scale(4);opacity:0}}
 .end.land{transform-box:fill-box;transform-origin:center;animation:pop .4s cubic-bezier(.2,.8,.2,1)}
-@keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.3)}100%{transform:scale(1)}}
+@keyframes pop{0%{transform:scale(0)}55%{transform:scale(1.45)}75%{transform:scale(.88)}100%{transform:scale(1)}}
+.ripple.r2{animation-duration:1.4s;animation-delay:.12s;opacity:0}
+.release{transform-box:fill-box;transform-origin:center;animation:ripple .7s cubic-bezier(.2,.8,.2,1) forwards;stroke-width:1.2}
+.dust{transform-box:fill-box;transform-origin:center;animation:dust .7s cubic-bezier(.15,.7,.3,1) forwards}
+@keyframes dust{from{transform:translate(0,0) scale(1);opacity:.85}to{transform:translate(var(--dx),var(--dy)) scale(.3);opacity:0}}
 @keyframes spin{to{transform:rotate(360deg)}}
+.dbpick .search input{background:var(--surface);box-shadow:var(--shadow);padding:11px 12px 11px 34px}
+.dbpick .search svg{left:11px}
+.dbres{list-style:none;margin:0;padding:0;background:var(--surface);border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
+.dbres li+li{border-top:.5px solid var(--line)}
+.dbres button{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;border:0;background:none;padding:10px 12px;text-align:left;cursor:pointer;color:inherit}
+.dbres button:active{background:var(--fill2)}
+.dbres .dbn{display:flex;flex-direction:column;min-width:0}
+.dbres .dbn b{font-size:16px;font-weight:600}
+.dbres .dbn small{font-size:12px;color:var(--muted)}
+.dbres .nums{margin-top:0;flex:none}
+.dbnone{padding:12px;font-size:14px;color:var(--muted)}
+.viewseg{grid-template-columns:auto auto;flex:none}
+.viewseg button{padding:5px 12px}
+.scene3d{position:relative;width:100%;aspect-ratio:4/5;border-radius:12px;overflow:hidden;background:#cfe3ee}
+.scene3d canvas{display:block;width:100%;height:100%}
+.s3-dist{position:absolute;left:10px;top:10px;font-size:13px;font-weight:700;color:#fff;background:rgba(0,0,0,.32);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:999px;padding:3px 10px;font-variant-numeric:tabular-nums}
+.s3-dist:empty{display:none}
+.s3-fail{position:absolute;inset:0;display:grid;place-items:center;margin:0;padding:20px;text-align:center;font-size:14px;color:var(--muted);background:var(--fill2)}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 </style>
 
@@ -278,9 +302,9 @@ const ARMS = [
  {v:4.5,label:"Nybyrjar",m:"ca. 50 m"},{v:6.5,label:"Litt øvd",m:"ca. 65 m"},
  {v:8.5,label:"Middels",m:"ca. 85 m"},{v:10.5,label:"Sterk",m:"ca. 105 m"},{v:13,label:"Proff",m:"130 m +"}];
 
-const S = { shot:{dist:70,shape:"rett",wind:"stille"}, discs:[], mode:"loading", filter:"alle", q:"", cmp:[], cmpMsg:"", layout:null, arm:2, hand:"rh", night:false, db:null, error:"" };
-try{ const p=JSON.parse(localStorage.getItem("discbag.prefs")||"{}"); if(p.arm!=null)S.arm=p.arm; if(p.hand)S.hand=p.hand; S.theme=p.theme||(p.night?"night":"auto"); S.night=S.theme==="night"; if(p.layout)S.layout=p.layout; if(Array.isArray(p.cmp))S.cmp=p.cmp.slice(0,8); if(p.shot)Object.assign(S.shot,p.shot); }catch(e){}
-function savePrefs(){ try{localStorage.setItem("discbag.prefs",JSON.stringify({arm:S.arm,hand:S.hand,theme:S.theme,layout:S.layout,cmp:S.cmp,shot:S.shot}))}catch(e){} }
+const S = { shot:{dist:70,shape:"rett",wind:"stille"}, discs:[], mode:"loading", filter:"alle", q:"", cmp:[], cmpMsg:"", layout:null, arm:2, hand:"rh", view:"top", night:false, db:null, error:"" };
+try{ const p=JSON.parse(localStorage.getItem("discbag.prefs")||"{}"); if(p.arm!=null)S.arm=p.arm; if(p.hand)S.hand=p.hand; S.theme=p.theme||(p.night?"night":"auto"); S.night=S.theme==="night"; if(p.layout)S.layout=p.layout; if(Array.isArray(p.cmp))S.cmp=p.cmp.slice(0,8); if(p.shot)Object.assign(S.shot,p.shot); if(p.view==="3d")S.view="3d"; }catch(e){}
+function savePrefs(){ try{localStorage.setItem("discbag.prefs",JSON.stringify({arm:S.arm,hand:S.hand,theme:S.theme,layout:S.layout,cmp:S.cmp,shot:S.shot,view:S.view}))}catch(e){} }
 
 const $ = s=>document.querySelector(s);
 const esc = s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -359,52 +383,245 @@ function flightSVG(list, opts={}){
     const e=sp[n-1], ec=opts.single?"var(--fg)":col;
     g+=`<circle class="end" data-i="${i}" cx="${e[0].toFixed(1)}" cy="${e[1].toFixed(1)}" r="5" fill="${ec}" stroke="var(--surface)" stroke-width="2"/>`;
     if(opts.single) g+=`<text class="dist" data-i="${i}" x="${clamp(e[0],pad.l+30,W-pad.r-30).toFixed(1)}" y="${(e[1]-12).toFixed(1)}" text-anchor="middle" font-size="12" font-weight="700" fill="var(--fg)">ca. ${Math.round(o.f.D)} m</text>`;
-    if(!opts.static) g+=`<g class="flyer" data-i="${i}" opacity="0"><g class="fly-body"><circle r="11" fill="${opts.single?"var(--accent)":col}" opacity=".35"/><g class="fly-spin"><image href="${thumbSrc(o.d)}" x="-9" y="-9" width="18" height="18" clip-path="url(#${id}c)"/></g></g></g>`;
+    if(!opts.static) g+=`<g class="ghosts" data-i="${i}" opacity="0">${[0,1,2,3,4].map(k=>`<circle r="${(5-k*0.8).toFixed(1)}" fill="${opts.single?"var(--accent)":col}" opacity="${(0.32-k*0.06).toFixed(2)}"/>`).join("")}</g>`
+      +`<g class="flyer" data-i="${i}" opacity="0"><ellipse class="fly-shadow" rx="9" ry="6" fill="#000" opacity=".2"/><g class="fly-body"><circle r="11" fill="${opts.single?"var(--accent)":col}" opacity=".35"/><g class="fly-spin"><image href="${thumbSrc(o.d)}" x="-9" y="-9" width="18" height="18" clip-path="url(#${id}c)"/></g></g></g>`;
     items.push({sp,D:o.f.D,col:ec});
   });
   FLY[id]={items,raf:0};
   return {svg:`<svg id="${id}" class="flightsvg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Flygelinje sett ovanfrå">${g}</svg>`, fl, id};
 }
-function playIn(sel){ const s=document.querySelector(sel+" svg.flightsvg"); if(s) playFlight(s.id); }
+function playIn(sel){ playEl(document.querySelector(`${sel} svg.flightsvg, ${sel} .scene3d`)); }
 function playFlight(id){
   const svg=document.getElementById(id), data=FLY[id]; if(!svg||!data)return;
   if(matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   if(data.raf) cancelAnimationFrame(data.raf);
-  const segs=[...svg.querySelectorAll(".seg")], ends=[...svg.querySelectorAll(".end")], flyers=[...svg.querySelectorAll(".flyer")], dists=[...svg.querySelectorAll(".dist")];
-  svg.querySelectorAll(".ripple").forEach(r=>r.remove());
+  const segs=[...svg.querySelectorAll(".seg")], ends=[...svg.querySelectorAll(".end")], flyers=[...svg.querySelectorAll(".flyer")], dists=[...svg.querySelectorAll(".dist")], ghosts=[...svg.querySelectorAll(".ghosts")];
+  svg.querySelectorAll(".ripple,.release,.dust").forEach(r=>r.remove());
   segs.forEach(s=>s.style.strokeDashoffset=1);
   ends.forEach(e=>{e.style.opacity=0;e.classList.remove("land");});
-  const DUR=2700, STAG=160; let t0=null, spin=0; const done=new Set();
+  const NS="http://www.w3.org/2000/svg";
+  const fx=(cls,cx,cy,r,attrs={})=>{ const c=document.createElementNS(NS,"circle"); c.setAttribute("class",cls); c.setAttribute("cx",cx); c.setAttribute("cy",cy); c.setAttribute("r",r);
+    Object.entries(attrs).forEach(([k,v])=>k.startsWith("--")?c.style.setProperty(k,v):c.setAttribute(k,v)); svg.appendChild(c); return c; };
+  // Posisjon langs banen for ein brøk f (0..n-1) av punkta
+  const at=(sp,f)=>{ const n=sp.length; f=clamp(f,0,n-1); const k=Math.min(n-2,Math.floor(f)), r=f-k, a=sp[k], b=sp[k+1]; return [a[0]+(b[0]-a[0])*r, a[1]+(b[1]-a[1])*r, a, b]; };
+  const DUR=2900, STAG=180; let t0=null, last=null; const done=new Set(), launched=new Set(), spin=data.items.map(()=>0);
   const step=now=>{
-    if(t0===null) t0=now;
+    if(t0===null){ t0=now; last=now; }
     if(!svg.isConnected){ data.raf=0; return; }
-    let all=true; spin=(spin+24)%360;
+    const dt=Math.min(50,now-last); last=now;
+    let all=true;
     data.items.forEach((it,i)=>{
-      const p=clamp((now-t0-i*STAG)/DUR,0,1); if(p<1) all=false;
-      const n=it.sp.length, f=p*(n-1), k=Math.min(n-2,Math.floor(f)), r=f-k;
-      const a=it.sp[k], b=it.sp[k+1], x=a[0]+(b[0]-a[0])*r, y=a[1]+(b[1]-a[1])*r;
+      const raw=(now-t0-i*STAG)/DUR, p=clamp(raw,0,1); if(p<1) all=false;
+      const n=it.sp.length;
+      if(raw>0&&!launched.has(i)){ launched.add(i); fx("release",it.sp[0][0],it.sp[0][1],5,{fill:"none",stroke:it.col}); }
+      // Rask utkast, roleg avslutning
+      const e=1-Math.pow(1-p,1.25), f=e*(n-1);
+      const [x,y,a,b]=at(it.sp,f);
       segs.forEach(s=>{ if(+s.dataset.i!==i)return; const A=+s.dataset.a,B=+s.dataset.b; s.style.strokeDashoffset=1-clamp((f-A)/Math.max(1,B-A),0,1); });
-      const fe=flyers[i];
+      const fe=flyers[i], live=p>0&&p<1;
       if(fe){
         const hd=Math.atan2(b[0]-a[0],-(b[1]-a[1]))*180/Math.PI;
-        const sc=1.3-0.4*p;
-        fe.setAttribute("opacity",p>0&&p<1?1:0);
+        // Høgde: stig fort, heng i lufta, sig ned mot slutten
+        const h=Math.pow(Math.sin(Math.PI*Math.min(1,p*1.08)),0.9);
+        const sc=0.95+0.55*h;
+        // Krenging: legg seg i svingretninga, flatar ut i fade
+        const bank=clamp(Math.abs(b[0]-a[0])*0.12,0,0.15);
+        spin[i]=(spin[i]+dt*(0.25+1.1*(1-p)))%360;
+        fe.setAttribute("opacity",live?1:0);
         fe.setAttribute("transform",`translate(${x.toFixed(1)},${y.toFixed(1)})`);
-        fe.firstElementChild.setAttribute("transform",`rotate(${hd.toFixed(1)}) scale(${sc.toFixed(2)},${(sc*0.5).toFixed(2)})`);
-        fe.querySelector(".fly-spin").setAttribute("transform",`rotate(${spin})`);
+        const sh=fe.querySelector(".fly-shadow");
+        sh.setAttribute("transform",`translate(${(h*7).toFixed(1)},${(h*11).toFixed(1)}) rotate(${hd.toFixed(1)}) scale(${(1-0.35*h).toFixed(2)},${(0.6-0.2*h).toFixed(2)})`);
+        sh.setAttribute("opacity",(0.22-0.1*h).toFixed(2));
+        fe.querySelector(".fly-body").setAttribute("transform",`rotate(${hd.toFixed(1)}) scale(${sc.toFixed(2)},${(sc*(0.5+bank)).toFixed(2)})`);
+        fe.querySelector(".fly-spin").setAttribute("transform",`rotate(${spin[i].toFixed(1)})`);
       }
+      const gh=ghosts[i];
+      if(gh){ gh.setAttribute("opacity",live?1:0);
+        [...gh.children].forEach((c,k)=>{ const [gx,gy]=at(it.sp,f-(k+1)*1.1*(1-p*0.6)); c.setAttribute("cx",gx.toFixed(1)); c.setAttribute("cy",gy.toFixed(1)); }); }
       const dist=dists.find(d=>+d.dataset.i===i);
-      if(dist) dist.textContent=p<1?`${Math.round(it.D*(1-Math.pow(1-p,1.35)))} m`:`ca. ${Math.round(it.D)} m`;
-      if(p>=1&&!done.has(i)){ done.add(i); const e=ends[i]; e.style.opacity=1; e.classList.add("land");
-        const rp=document.createElementNS("http://www.w3.org/2000/svg","circle");
-        rp.setAttribute("class","ripple"); rp.setAttribute("cx",it.sp[n-1][0]); rp.setAttribute("cy",it.sp[n-1][1]); rp.setAttribute("r","6"); rp.setAttribute("fill","none"); rp.setAttribute("stroke",it.col);
-        svg.appendChild(rp); }
+      if(dist) dist.textContent=p<1?`${Math.round(it.D*(1-Math.pow(1-e,1.35)))} m`:`ca. ${Math.round(it.D)} m`;
+      if(p>=1&&!done.has(i)){ done.add(i); const en=ends[i]; en.style.opacity=1; en.classList.add("land");
+        const [ex,ey]=it.sp[n-1], [px,py]=it.sp[n-4], dx=ex-px, dy=ey-py, L=Math.hypot(dx,dy)||1;
+        fx("ripple",ex,ey,6,{fill:"none",stroke:it.col});
+        fx("ripple r2",ex,ey,6,{fill:"none",stroke:it.col});
+        // Litt støv som sprutar framover i landingsretninga
+        for(let k=0;k<6;k++){ const ang=Math.atan2(dy,dx)+(k-2.5)*0.45, d=10+Math.random()*10;
+          fx("dust",ex,ey,1.4+Math.random()*1.2,{style:`animation-delay:${k*15}ms`,fill:it.col,"--dx":`${(Math.cos(ang)*d).toFixed(1)}px`,"--dy":`${(Math.sin(ang)*d).toFixed(1)}px`}); }
+      }
     });
     data.raf=all?0:requestAnimationFrame(step);
   };
   data.raf=requestAnimationFrame(step);
 }
-function throwHead(label){ return `<div class="cardhead"><span>Sett ovanfrå · ${esc(ARMS[S.arm].label.toLowerCase())} arm</span><button class="pill throw" data-throw>${ICON_PLAY}${label}</button></div>`; }
+function throwHead(label){ return `<div class="cardhead"><div class="seg viewseg" role="group" aria-label="Vising"><button data-view="top" aria-pressed="${S.view!=="3d"}">Ovanfrå</button><button data-view="3d" aria-pressed="${S.view==="3d"}">3D</button></div><button class="pill throw" data-throw>${ICON_PLAY}${label}</button></div>`; }
+function playEl(s){ if(T3&&!T3.el.isConnected) destroy3D(); if(!s)return; s.classList.contains("scene3d")?play3D(s.id):playFlight(s.id); }
+
+/* ---------- 3D-kast, sett bak kastaren ---------- */
+const F3={}; let T3=null;
+function flightBlock(list,opts){
+  const r=flightSVG(list,opts);
+  if(S.view!=="3d") return r;
+  delete FLY[r.id];
+  const id="f3d"+(++flyCount); F3[id]={fl:r.fl,single:!!opts.single};
+  return {...r,id,svg:`<div class="scene3d" id="${id}" role="img" aria-label="Kastet i 3D, sett bak kastaren"><div class="s3-dist" aria-hidden="true"></div></div>`};
+}
+function destroy3D(){ if(!T3)return; cancelAnimationFrame(T3.raf); T3.ro&&T3.ro.disconnect();
+  T3.scene.traverse(o=>{o.geometry&&o.geometry.dispose(); if(o.material)[].concat(o.material).forEach(m=>{m.map&&m.map.dispose();m.dispose();});});
+  T3.scene.background&&T3.scene.background.dispose&&T3.scene.background.dispose();
+  T3.renderer.dispose(); T3.renderer.forceContextLoss&&T3.renderer.forceContextLoss(); T3.canvas.remove(); T3=null; }
+function build3D(el,data){
+  destroy3D();
+  const fail=()=>{ el.insertAdjacentHTML("beforeend",`<p class="s3-fail">3D-vising er ikkje tilgjengeleg i denne nettlesaren.</p>`); return false; };
+  if(!window.THREE) return fail();
+  const canvas=document.createElement("canvas"); el.prepend(canvas);
+  let renderer; try{ renderer=new THREE.WebGLRenderer({canvas,antialias:true}); }catch(e){ canvas.remove(); return fail(); }
+  renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1)); renderer.outputEncoding=THREE.sRGBEncoding;
+  const dark=isDarkNow(), C=c=>new THREE.Color(c);
+  const scene=new THREE.Scene();
+  const maxD=Math.max(60,...data.fl.map(o=>o.f.D)), yMax=Math.ceil(maxD/20)*20;
+  let xMax=8; data.fl.forEach(o=>o.f.pts.forEach(p=>xMax=Math.max(xMax,Math.abs(p[0]))));
+  const fwW=Math.max(22,xMax*2+12), L=yMax+70;
+  let seed=11; const rnd=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; };
+  const cvs=(w,h,fn)=>{ const c=document.createElement("canvas"); c.width=w; c.height=h; fn(c.getContext("2d")); const t=new THREE.CanvasTexture(c); t.encoding=THREE.sRGBEncoding; return t; };
+
+  // Himmel og dis
+  scene.background=cvs(4,256,x=>{ const g=x.createLinearGradient(0,0,0,256);
+    if(dark){ g.addColorStop(0,"#02050b"); g.addColorStop(.62,"#0c1826"); g.addColorStop(1,"#1a2c3b"); }
+    else { g.addColorStop(0,"#4f93d6"); g.addColorStop(.6,"#a7cfee"); g.addColorStop(1,"#e4f0f5"); }
+    x.fillStyle=g; x.fillRect(0,0,4,256); });
+  scene.fog=new THREE.Fog(dark?0x1a2c3b:0xdcebf2,L*0.5,L+170);
+  scene.add(new THREE.HemisphereLight(dark?0x6a84b0:0xffffff,dark?0x08120a:0x3d5530,dark?0.4:0.62));
+  const sun=new THREE.DirectionalLight(dark?0x8899cc:0xfff2dc,dark?0.25:0.7); sun.position.set(-30,60,25); scene.add(sun);
+
+  // Bakke, fairway med klippestriper, tee
+  const rough=new THREE.Mesh(new THREE.PlaneGeometry(700,L+700),new THREE.MeshLambertMaterial({color:dark?0x0c1c10:0x3f6e2c}));
+  rough.rotation.x=-Math.PI/2; rough.position.z=-L/2; scene.add(rough);
+  const ft=cvs(8,64,x=>{ x.fillStyle=dark?"#153520":"#5e9a3c"; x.fillRect(0,0,8,64); x.fillStyle=dark?"#1a3f26":"#6aa845"; x.fillRect(0,0,8,32); });
+  ft.wrapS=ft.wrapT=THREE.RepeatWrapping; ft.repeat.set(1,(L+20)/10);
+  const fair=new THREE.Mesh(new THREE.PlaneGeometry(fwW,L+20),new THREE.MeshLambertMaterial({map:ft}));
+  fair.rotation.x=-Math.PI/2; fair.position.set(0,0.01,-(L+20)/2+10); scene.add(fair);
+  const tee=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.08,3.2),new THREE.MeshLambertMaterial({color:dark?0x3a3f44:0x9a9d9f}));
+  tee.position.set(0,0.04,0.9); scene.add(tee);
+
+  // Avstandsmerke kvar 20. meter
+  const lineM=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:dark?0.18:0.45,depthWrite:false});
+  for(let m=20;m<=yMax;m+=20){
+    const ln=new THREE.Mesh(new THREE.PlaneGeometry(fwW,0.14),lineM); ln.rotation.x=-Math.PI/2; ln.position.set(0,0.02,-m); scene.add(ln);
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:cvs(128,64,x=>{ x.font="700 38px -apple-system,'Segoe UI',Inter,sans-serif"; x.textAlign="center"; x.textBaseline="middle"; x.shadowColor="rgba(0,0,0,.55)"; x.shadowBlur=8; x.fillStyle="#fff"; x.fillText(m+" m",64,32); }),transparent:true,depthWrite:false}));
+    sp.scale.set(3.2,1.6,1); sp.position.set(-fwW/2+1.8,1.1,-m); scene.add(sp);
+  }
+
+  // Granskog langs sidene
+  const trunkG=new THREE.CylinderGeometry(0.18,0.28,1,6), coneG=new THREE.ConeGeometry(1,1,8);
+  const trunkM=new THREE.MeshLambertMaterial({color:dark?0x24190f:0x6b4a2f});
+  const leafM=[0x1f4426,0x2a5530,0x173a20,0x335f30].map(c=>new THREE.MeshLambertMaterial({color:dark?C(c).multiplyScalar(.32):c}));
+  for(let z=14;z>-L;z-=4.2) for(const side of [-1,1]){ const n=1+(rnd()<0.55?1:0);
+    for(let k=0;k<n;k++){
+      const x=side*(fwW/2+1.5+rnd()*rnd()*26+k*7), h=6+rnd()*10, w=h*(0.24+rnd()*0.08);
+      const t=new THREE.Group(), m=leafM[Math.floor(rnd()*leafM.length)];
+      const tr=new THREE.Mesh(trunkG,trunkM); tr.scale.set(1,h*0.25,1); tr.position.y=h*0.125; t.add(tr);
+      const c1=new THREE.Mesh(coneG,m); c1.scale.set(w,h*0.6,w); c1.position.y=h*0.45; t.add(c1);
+      const c2=new THREE.Mesh(coneG,m); c2.scale.set(w*0.68,h*0.42,w*0.68); c2.position.y=h*0.76; t.add(c2);
+      t.position.set(x,0,z+rnd()*3); t.rotation.y=rnd()*6; scene.add(t);
+    } }
+  // Åsar i bakgrunnen
+  const hillM=new THREE.MeshLambertMaterial({color:dark?0x0a150e:0x3e6a47});
+  for(let i=0;i<8;i++){ const hm=new THREE.Mesh(new THREE.SphereGeometry(1,18,10),hillM); const r=45+rnd()*60;
+    hm.scale.set(r,14+rnd()*26,r*0.6); hm.position.set(-210+i*60+rnd()*20,-2,-(L+80+rnd()*50)); scene.add(hm); }
+
+  // Discar med spor, skugge og landingsring
+  const glow=dark?{emissive:0x9dff6e}:{};
+  const PH=dark?["#9a9aa0","#ff9f0a","#409cff"]:["#8e8e93","#e06a00","#1a7cf0"];
+  const SEG=160, RAD=6;
+  const items=data.fl.map((o,i)=>{
+    const d=o.d, f=o.f, n=f.pts.length, peak=clamp(f.D*0.1,3,14);
+    const col=data.single?(dark?"#5be37d":"#30b350"):LINE_COLORS[i%LINE_COLORS.length];
+    const pos=e=>{ e=clamp(e,0,1); const ff=e*(n-1), k=Math.min(n-2,Math.floor(ff)), r=ff-k, a=f.pts[k], b=f.pts[k+1];
+      const h=1.3*(1-e)+peak*Math.sin(Math.PI*Math.pow(e,0.8));
+      return new THREE.Vector3(a[0]+(b[0]-a[0])*r, Math.max(0.07,h), -(a[1]+(b[1]-a[1])*r)); };
+    const tex=new THREE.Texture(); tex.encoding=THREE.sRGBEncoding;
+    const im=new Image(); im.onload=()=>{ tex.image=im; tex.needsUpdate=true; T3&&T3.render(); }; im.src=thumbSrc(d);
+    const top=new THREE.MeshLambertMaterial({map:tex,...glow,...(dark?{emissiveMap:tex,emissiveIntensity:.7}:{})});
+    const rim=new THREE.MeshLambertMaterial({color:rimColor(d),...glow,...(dark?{emissiveIntensity:.45}:{})});
+    const spin=new THREE.Group(); spin.add(new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.5,0.12,32),[rim,top,rim]));
+    const body=new THREE.Group(); body.rotation.order="YXZ"; body.add(spin); scene.add(body);
+    const sh=new THREE.Mesh(new THREE.CircleGeometry(0.62,24),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.25,depthWrite:false}));
+    sh.rotation.x=-Math.PI/2; scene.add(sh);
+    const curve=new THREE.CatmullRomCurve3(Array.from({length:61},(_,j)=>pos(j/60)));
+    const tg=new THREE.TubeGeometry(curve,SEG,0.075,RAD,false);
+    let tm;
+    if(data.single){ const te=(0.62+d.glide*0.02), cols=[C(PH[0]),C(PH[1]),C(PH[2])], ca=[];
+      for(let j=0;j<=SEG;j++){ const e=j/SEG, c=e<0.12?cols[0]:e<te-0.1?cols[1]:cols[2]; for(let r=0;r<=RAD;r++) ca.push(c.r,c.g,c.b); }
+      tg.setAttribute("color",new THREE.Float32BufferAttribute(ca,3)); tm=new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,opacity:.9}); }
+    else tm=new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.85});
+    const tube=new THREE.Mesh(tg,tm); tube.geometry.setDrawRange(0,0); scene.add(tube);
+    const ring=new THREE.Mesh(new THREE.RingGeometry(0.7,0.95,40),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide}));
+    ring.rotation.x=-Math.PI/2; scene.add(ring);
+    const end=pos(1), pre=pos(0.97);
+    return {d,f,pos,body,spin,sh,tube,ring,end,pre,bank:0};
+  });
+
+  const cam=new THREE.PerspectiveCamera(55,1,0.1,L+400);
+  T3={el,canvas,renderer,scene,cam,items,yMax,raf:0,camPos:new THREE.Vector3(0,2.6,12),look:new THREE.Vector3(0,2,-25),render:()=>renderer.render(scene,cam)};
+  const resize=()=>{ if(!T3)return; const r=el.getBoundingClientRect(); if(!r.width)return; renderer.setSize(r.width,r.height,false); cam.aspect=r.width/r.height; cam.updateProjectionMatrix(); T3.render(); };
+  T3.ro=new ResizeObserver(resize); T3.ro.observe(el); resize();
+  return true;
+}
+function play3D(id){
+  const el=document.getElementById(id), data=F3[id]; if(!el||!data) return;
+  if(!T3||T3.el!==el){ if(!build3D(el,data)) return; }
+  const T=T3, cam=T.cam; cancelAnimationFrame(T.raf);
+  const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const DUR=3400, STAG=220, SKID=500, total=DUR+STAG*(T.items.length-1)+SKID+1600;
+  const distEl=el.querySelector(".s3-dist");
+  T.items.forEach(o=>{ o.landed=null; o.bank=0; o.tube.geometry.setDrawRange(0,0); o.ring.material.opacity=0; });
+  T.camPos.set(0,2.6,12); T.look.set(0,2,-25);
+  const segIdx=160*6*6;
+  let t0=null, last=null;
+  const step=now=>{
+    if(!el.isConnected||T3!==T){ if(T3===T) destroy3D(); return; }
+    if(t0===null){ t0=reduce?now-total:now; last=now; }
+    const dt=Math.min(50,now-last); last=now;
+    const tgt=new THREE.Vector3(); let live=0;
+    T.items.forEach((o,i)=>{
+      const tl=now-t0-i*STAG, raw=tl/DUR, p=clamp(raw,0,1), e=1-Math.pow(1-p,1.25);
+      let P;
+      if(raw<1){
+        P=o.pos(e);
+        const a=o.pos(e-0.02), b=o.pos(e+0.02), d1=P.clone().sub(a), d2=b.clone().sub(P);
+        const fw=d2.lengthSq()>1e-6?d2:d1;
+        o.body.rotation.y=Math.atan2(-fw.x,-fw.z);
+        const k=(d2.x/(d2.length()||1)-d1.x/(d1.length()||1))/0.02;
+        o.bank+=(clamp(-k*0.9,-0.6,0.6)-o.bank)*0.12;
+        o.body.rotation.z=o.bank; o.body.rotation.x=0.06;
+        if(p>0) o.spin.rotation.y+=dt*0.03*(1-p*0.6);
+        o.tube.geometry.setDrawRange(0,Math.floor(e*160)*6*6);
+        if(p>0) live++;
+      } else {
+        if(o.landed===null) o.landed=reduce?now-5000:now;
+        const s=clamp((now-o.landed)/SKID,0,1), dir=o.end.clone().sub(o.pre).setY(0).normalize();
+        P=o.end.clone().addScaledVector(dir,1.8*(1-Math.pow(1-s,2))); P.y=0.07;
+        o.body.rotation.z*=0.85; o.body.rotation.x*=0.85; o.spin.rotation.y+=dt*0.03*0.4*(1-s);
+        o.tube.geometry.setDrawRange(0,segIdx);
+        const r=clamp((now-o.landed)/1000,0,1); o.ring.position.set(o.end.x,0.04,o.end.z); o.ring.scale.setScalar(1+r*5); o.ring.material.opacity=0.75*(1-r);
+      }
+      o.body.position.copy(P);
+      o.sh.position.set(P.x,0.03,P.z); o.sh.scale.setScalar(1+P.y*0.07); o.sh.material.opacity=0.28/(1+P.y*0.12);
+      tgt.add(P);
+      if(i===0&&distEl&&data.single) distEl.textContent=raw<1?`${Math.round(o.f.D*(1-Math.pow(1-e,1.35)))} m`:`ca. ${Math.round(o.f.D)} m`;
+    });
+    tgt.divideScalar(T.items.length);
+    const k=reduce?1:1-Math.exp(-dt*0.0032);
+    T.camPos.lerp(new THREE.Vector3(tgt.x*0.5,2.6+tgt.y*0.95,Math.min(12,tgt.z+18)),k);
+    T.look.lerp(new THREE.Vector3(tgt.x*0.8,0.8+tgt.y*0.75,tgt.z-16),k);
+    cam.position.copy(T.camPos); cam.lookAt(T.look);
+    // Discen blir teikna større jo lenger unna han er, så han alltid er synleg
+    T.items.forEach(o=>{ const s=clamp(o.body.position.distanceTo(cam.position)/30,0.3,2.4); o.body.scale.setScalar(s); o.sh.scale.setScalar(s*(1+o.body.position.y*0.07)); });
+    T.render();
+    T.raf=now-t0<total?requestAnimationFrame(step):0;
+  };
+  T.raf=requestAnimationFrame(step);
+}
 const ICON_MOON=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>`;
 const ICON_SUN=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></svg>`;
 function isDarkNow(){ if(S.theme==="night") return true; if(S.theme==="light") return false; try{ const m=getComputedStyle(document.body).backgroundColor.match(/\d+(\.\d+)?/g); if(!m) return false; return (0.299*m[0]+0.587*m[1]+0.114*m[2])/255<0.5; }catch(e){ return false; } }
@@ -522,7 +739,7 @@ function setTheme(t){
   const r=document.documentElement; r.classList.toggle("night",t==="night"); r.classList.toggle("light",t==="light");
   document.querySelectorAll("[data-night]").forEach(b=>b.outerHTML=nightBtn());
   const st=$(".stage"); if(st) st.classList.toggle("night",S.night);
-  const b=$("#nightBtn"); if(b){ b.textContent=S.night?"Lys på":"Slå av lyset"; b.setAttribute("aria-pressed",S.night); }
+  if(T3&&T3.el.isConnected){ const id=T3.el.id; destroy3D(); play3D(id); }
   if(!V)return;
   const on=S.night;
   V.mTop.emissiveIntensity=on?0.75:0; V.mBot.emissiveIntensity=on?0.55:0;
@@ -574,10 +791,9 @@ function bagHero(){
   const missing=cats.filter(c=>!cnt(c[0]));
   let tip;
   if(!missing.length) tip="Baggen dekkjer alle fire disctypane.";
-  if(!favs.length&&all.length>5) tip+=" Trykk stjerna på ein disc for å feste han i vifta.";
   else { const m=missing[0]; tip=`Baggen manglar ein <b>${m[2]}</b>. Ein stabil ${m[2]} rundt <b>${m[3]}</b> vil fylle hòlet.`;
     if(missing.length>1) tip+=` Det manglar òg ${missing.slice(1).map(c=>c[2]).join(" og ")}.`; }
-  const fan=[...favs,...all.filter(d=>!d.fav)].slice(0,5).map((d,i)=>`<button class="fan-d" data-open="${esc(d.id)}" style="z-index:${10-i}" aria-label="Opne ${esc(d.name)}">${d.fav?`<span class="fanstar" aria-hidden="true">${ICON_STAR}</span>`:""}<img src="${thumbSrc(d)}" alt="" style="animation-duration:${16+i*6}s;${i%2?"animation-direction:reverse":""}"></button>`).join("");
+  const fan=[...favs,...all.filter(d=>!d.fav)].slice(0,5).map((d,i)=>`<button class="fan-d" data-open="${esc(d.id)}" style="z-index:${10-i}" aria-label="Opne ${esc(d.name)}"><img src="${thumbSrc(d)}" alt="" style="animation-duration:${16+i*6}s;${i%2?"animation-direction:reverse":""}"></button>`).join("");
   return `<section class="hero" aria-label="Oversikt over baggen">
     <div class="fan">${fan}</div>
     <div class="stats"><div><b>${all.length}</b><small>disc${all.length===1?"":"ar"}</small></div><div><b>${Math.round(longest.D)}<span> m</span></b><small>lengst: ${esc(longest.d.name)}</small></div><div><b>${Math.min(...all.map(d=>d.speed))}–${Math.max(...all.map(d=>d.speed))}</b><small>speed-spenn</small></div></div>
@@ -604,8 +820,8 @@ function discRow(d,compact){
   const ci=S.cmp.indexOf(d.id), sel=ci>=0, col=sel?LINE_COLORS[ci%LINE_COLORS.length]:"";
   const nums=`<div class="nums" aria-label="Speed ${d.speed}, glide ${d.glide}, turn ${d.turn}, fade ${d.fade}"><span>${d.speed}</span><span>${d.glide}</span><span>${d.turn}</span><span>${d.fade}</span></div>`;
   const main=compact
-    ? `<img class="thumb" src="${thumbSrc(d)}" alt="" loading="lazy"><div class="meta"><div class="name">${esc(d.name)}${d.fav?`<span class="favmark" role="img" aria-label="Favoritt">${ICON_STAR}</span>`:""}</div><div class="kind">${esc(d.brand)} · ${esc(d.plastic||"")}</div></div>${nums}`
-    : `<img class="thumb" src="${thumbSrc(d)}" alt="" loading="lazy"><div class="meta"><div class="name">${esc(d.name)}${d.fav?`<span class="favmark" aria-label="Favoritt">★</span>`:""}</div><div class="kind">${esc(d.brand)} · ${esc(d.plastic||"")} · ${discType(d.speed)}</div>${nums}</div>${miniSVG(d)}`;
+    ? `<img class="thumb" src="${thumbSrc(d)}" alt="" loading="lazy"><div class="meta"><div class="name">${esc(d.name)}</div><div class="kind">${esc(d.brand)} · ${esc(d.plastic||"")}</div></div>${nums}`
+    : `<img class="thumb" src="${thumbSrc(d)}" alt="" loading="lazy"><div class="meta"><div class="name">${esc(d.name)}</div><div class="kind">${esc(d.brand)} · ${esc(d.plastic||"")} · ${discType(d.speed)}</div>${nums}</div>${miniSVG(d)}`;
   return `<li><div class="disccard${sel?" sel":""}"${sel?` style="--sel:${col}"`:""}><button class="dc-main" data-open="${esc(d.id)}">${main}</button>
     <button class="cmp" data-cmp="${esc(d.id)}" aria-pressed="${sel}" aria-label="${sel?"Fjern":"Legg til"} ${esc(d.name)} ${sel?"frå":"i"} samanlikninga">${sel?ICON_CHECK:ICON_PLUS}</button></div></li>`;
 }
@@ -629,7 +845,7 @@ function renderBagChart(play){
   const box=$("#bagChart"); if(!box) return;
   const {mode,list}=chartSet();
   if(!list.length){ box.innerHTML=`<p class="hintline" style="margin:0">Ingen discar å vise. Endre søket eller filteret.</p>`; return; }
-  const {svg}=flightSVG(list,{w:320,h:380});
+  const {svg}=flightBlock(list,{w:320,h:380});
   let foot;
   if(mode==="sel") foot=`<div class="cmpchips">${list.map((d,i)=>`<button class="cmpchip" data-cmp="${esc(d.id)}" aria-label="Fjern ${esc(d.name)} frå samanlikninga"><i style="background:${LINE_COLORS[i]}"></i>${esc(d.name)} ×</button>`).join("")}<button class="cmpchip clear" data-cmp-clear>Tøm</button></div>
      <p class="hintline">${S.cmpMsg||`${list.length} av ${MAX_CMP} valt. Trykk + på fleire discar i lista for å leggje dei til.`}</p>`;
@@ -676,22 +892,22 @@ function armControls(){
 }
 
 function flightCard(d){
-  const {svg,fl}=flightSVG([d],{single:true,w:320,h:400});
+  const {svg,fl}=flightBlock([d],{single:true,w:320,h:400});
   const f=fl[0].f, a=ARMS[S.arm];
   let note;
   if(f.a<0.85) note=`Med kastekraft «${a.label}» får du ikkje opp nok fart til speed ${d.speed}. Disken flyr kortare, svingar mindre og fadar tidlegare enn tala lovar.`;
   else if(f.a>1.15) note=`Med kastekraft «${a.label}» kastar du hardare enn disken treng. Han vil svinge meir til ${S.hand==="rh"?"høgre":"venstre"} enn tala tilseier.`;
   else note=`Kastekraft «${a.label}» passar godt til denne discen, så han flyr omtrent slik tala seier.`;
   return `${throwHead("Kast igjen")}${svg}<div class="legend"><span><i style="background:var(--muted)"></i>Utkast</span><span><i style="background:var(--turn)"></i>Turn-fase (høg fart)</span><span><i style="background:var(--fade)"></i>Fade-fase (lågare fart)</span></div>
-     ${armControls()}<p class="notice" style="margin:10px 0 0">${note} Linja er sett ovanfrå, frå tee og framover. Sidevegs er skalaen forstørra.</p>`;
+     ${armControls()}<p class="notice" style="margin:10px 0 0">${note} ${S.view==="3d"?"Sett bak kastaren. Høgda er omtrentleg, og discen er teikna større enn i røynda.":"Linja er sett ovanfrå, frå tee og framover. Sidevegs er skalaen forstørra."}</p>`;
 }
 function viewDisc(id){
   const d=S.discs.find(x=>x.id===id);
   if(!d){ if(S.mode==="loading"){ $("#topbar").innerHTML=`<h1>Hentar …</h1>`; $("#main").innerHTML=""; return; } location.hash="#bag"; return; }
-  $("#topbar").innerHTML=`<a class="iconbtn" href="#bag" aria-label="Tilbake til baggen">${ICON_BACK}</a><h1 class="navtitle">${esc(d.name)}</h1>${S.mode==="readonly"?"":`<button class="iconbtn fav" data-fav="${esc(d.id)}" aria-pressed="${!!d.fav}" aria-label="Favoritt" title="Favoritt">${ICON_STAR}</button>`}${nightBtn()}`;
+  $("#topbar").innerHTML=`<a class="iconbtn" href="#bag" aria-label="Tilbake til baggen">${ICON_BACK}</a><h1 class="navtitle">${esc(d.name)}</h1>${nightBtn()}`;
   const canEdit=S.mode!=="readonly";
   $("#main").innerHTML=`<div class="view">
-   <div class="stage" id="stage"><div class="tools"><button class="pill" id="nightBtn" aria-pressed="${S.night}">${S.night?"Lys på":"Slå av lyset"}</button></div><div class="hint">Dra for å snurre</div></div>
+   <div class="stage" id="stage"><div class="hint">Dra for å snurre</div></div>
    <div class="titleblock"><h2>${esc(d.name)}</h2><div class="kind">${discType(d.speed)} · ${esc(d.brand)}${d.weight?` · ${esc(d.weight)} g`:""}</div><span class="stab">${stability(d)}</span></div>
    <div class="stamp" aria-label="Flygetal"><div><b>${d.speed}</b><small>Speed</small></div><div><b>${d.glide}</b><small>Glide</small></div><div><b>${d.turn}</b><small>Turn</small></div><div><b>${d.fade}</b><small>Fade</small></div></div>
    <div class="card numexpl">${["speed","glide","turn","fade"].map(k=>`<div class="ne"><div class="big">${k==="turn"?fmtTurn(d[k]):d[k]}</div><div><h4>${NUMINFO[k].t}</h4><p>${NUMINFO[k].say(d[k])}</p>${scaleBar(k,d[k])}</div></div>`).join("")}</div>
@@ -702,7 +918,6 @@ function viewDisc(id){
   </div>`;
   buildViewer($("#stage"),d);
   playIn("#flightCard");
-  $("#nightBtn").onclick=()=>setNight(!S.night);
   const del=$("#delBtn");
   if(del) del.onclick=()=>{ const cb=$("#confirmBox"); cb.hidden=false; cb.innerHTML=`<div class="confirm"><span>Fjerne <b>${esc(d.name)}</b> frå baggen? Dette kan ikkje angrast.</span><div class="actions"><button class="btn" id="cNo">Avbryt</button><button class="btn primary" style="background:var(--warn);border-color:var(--warn)" id="cYes">Fjern</button></div></div>`;
     $("#cNo").onclick=()=>{cb.hidden=true;}; $("#cYes").onclick=async()=>{ await removeDisc(d.id); location.hash="#bag"; }; };
@@ -738,6 +953,98 @@ function viewTal(){
   </div>`;
 }
 
+/* ---------- Kjende discar (produsent|namn|speed|glide|turn|fade) ---------- */
+const DISCDB=`Innova|Aviar|2|3|0|1
+Innova|Rhyno|2|1|0|3
+Innova|Pig|3|1|0|3
+Innova|Dart|3|4|0|0
+Innova|Roc|4|4|0|3
+Innova|Shark|4|4|0|2
+Innova|Mako3|5|5|0|0
+Innova|Roc3|5|4|0|3
+Innova|Gator|5|2|0|3
+Innova|Wombat3|5|6|-1|0
+Innova|Leopard|6|5|-2|1
+Innova|Leopard3|7|5|-2|1
+Innova|TL|7|5|0|1
+Innova|TL3|8|4|0|1
+Innova|Teebird|7|5|0|2
+Innova|Teebird3|7|5|0|2
+Innova|Eagle|7|4|-1|3
+Innova|Firebird|9|3|0|4
+Innova|Thunderbird|9|5|0|2
+Innova|Valkyrie|9|4|-2|2
+Innova|Sidewinder|9|5|-3|1
+Innova|Roadrunner|9|5|-4|1
+Innova|Beast|10|5|-2|2
+Innova|Mamba|11|6|-5|1
+Innova|Wraith|11|5|-1|3
+Innova|Destroyer|12|5|-1|3
+Innova|Tern|12|6|-2|2
+Innova|Boss|13|5|-1|3
+Innova|Shryke|13|6|-2|2
+Innova|Katana|13|5|-3|3
+Innova|Corvette|14|6|-1|2
+Discraft|Challenger|2|3|0|2
+Discraft|Luna|3|3|0|3
+Discraft|Zone|4|3|0|3
+Discraft|Comet|4|5|-2|1
+Discraft|Meteor|4|5|-3|1
+Discraft|Wasp|5|3|0|2
+Discraft|Buzzz|5|4|-1|1
+Discraft|Stalker|7|5|-1|2
+Discraft|Undertaker|9|5|-1|2
+Discraft|Heat|9|6|-3|1
+Discraft|Predator|9|3|0|4
+Discraft|Avenger SS|10|5|-3|1
+Discraft|Zeus|12|5|-1|3
+Discraft|Force|12|5|0|3
+Discraft|Thrasher|12|5|-3|2
+Discraft|Nuke|13|5|-1|3
+Discraft|Crank|13|5|-2|1
+Discmania|P2|2|3|0|1
+Discmania|MD3|5|5|0|1
+Discmania|MD4|5|3|0|3
+Discmania|FD|7|6|0|1
+Discmania|Essence|8|6|-2|1
+Discmania|PD|10|4|0|3
+Discmania|DD3|12|5|-1|2
+Latitude 64|Pure|3|3|-1|1
+Latitude 64|Compass|5|5|0|1
+Latitude 64|Fuse|5|6|-1|0
+Latitude 64|River|7|7|-1|1
+Latitude 64|Explorer|7|5|0|2
+Latitude 64|Diamond|8|6|-3|1
+Latitude 64|Saint|9|7|-1|2
+Dynamic Discs|Judge|2|4|0|1
+Dynamic Discs|Truth|5|5|0|2
+Dynamic Discs|Maverick|7|4|-1.5|2
+Dynamic Discs|Escape|9|5|-1|2
+Dynamic Discs|Felon|9|3|0.5|4
+Dynamic Discs|Trespass|12|5|-0.5|3
+Westside|Harp|4|3|0|3
+Westside|Underworld|7|6|-3|1
+Westside|Stag|8|4|-1|2
+Westside|Sword|12|5|-0.5|2
+MVP|Envy|3|3|0|2
+MVP|Hex|5|5|-1|1
+MVP|Crave|6.5|5|-1|1
+MVP|Volt|8|5|-0.5|2
+MVP|Insanity|9|5|-2|1.5
+Kastaplast|Berg|1|1|0|2
+Kastaplast|Reko|3|3|0|1
+Kastaplast|Svea|5|6|-1|0
+Kastaplast|Falk|9|6|-2|1
+Prodigy|PA-3|3|4|0|1`.split("\n").map(l=>{ const [brand,name,...n]=l.split("|"); const [speed,glide,turn,fade]=n.map(Number); return {brand,name,speed,glide,turn,fade}; });
+function searchDB(q){
+  q=q.trim().toLowerCase().replace(/\s+/g," "); if(!q) return [];
+  const words=q.split(" ");
+  return DISCDB.map(d=>{ const n=d.name.toLowerCase(), b=d.brand.toLowerCase(), all=b+" "+n;
+      if(!words.every(w=>all.includes(w))) return null;
+      return {d,score:n===q?0:n.startsWith(q)?1:n.includes(q)?2:3}; })
+    .filter(Boolean).sort((a,b)=>a.score-b.score||a.d.name.localeCompare(b.d.name)).slice(0,8).map(x=>x.d);
+}
+
 const COLORS=["#e8c34a","#f2833b","#e5484d","#d6409f","#8e4ec6","#3e63dd","#0ea5b7","#30a46c","#abd490","#f5f2e8","#2b2b2b"];
 function viewForm(editId){
   const d0=editId?S.discs.find(x=>x.id===editId):null;
@@ -746,6 +1053,9 @@ function viewForm(editId){
   $("#topbar").innerHTML=d0?`<a class="iconbtn" href="#disc-${esc(d0.id)}" aria-label="Tilbake">${ICON_BACK}</a><div style="flex:1;min-width:0"><div class="sub">Endre</div><h1>${esc(d0.name)}</h1></div>`:`<div style="flex:1;min-width:0"><div class="sub">Ny i baggen</div><h1>Legg til disc</h1></div>`;
   if(S.mode==="readonly"){ $("#main").innerHTML=`<div class="view">${modeNotice()}</div>`; return; }
   $("#main").innerHTML=`<div class="view">${modeNotice()}<form id="f" novalidate>
+   ${d0?"":`<div class="field dbpick"><label for="f-db">Finn ein kjend disc</label><div class="search">${ICON_SEARCH}<input id="f-db" type="search" placeholder="t.d. Buzzz, Destroyer, Discmania" autocomplete="off" aria-controls="dbres"></div>
+     <ul class="dbres" id="dbres" role="listbox" aria-label="Treff i discdatabasen" hidden></ul>
+     <p class="hintline" style="margin:2px 4px 0">Fyller inn namn, produsent og flygetal. Finn du han ikkje, skriv han inn sjølv nedanfor.</p></div>`}
    <div class="photobox">
      <img class="thumb" id="pv" alt="">
      <div class="photoside"><div id="pvtxt" class="kind"></div>
@@ -771,7 +1081,21 @@ function viewForm(editId){
   const pv=()=>{ const x=read(); const ok=[x.speed,x.glide,x.turn,x.fade].every(Number.isFinite);
     $("#pv").src=thumbSrc({...x,name:x.name||"Disc"}); $("#pvtxt").textContent=ok?`${discType(x.speed)} · ${stability(x)}`:""; };
   pv();
-  $("#f").addEventListener("input",pv);
+  $("#f").addEventListener("input",e=>{ if(e.target.id!=="f-db") pv(); });
+  const dbIn=$("#f-db"), dbRes=$("#dbres");
+  if(dbIn){
+    let hits=[];
+    const show=()=>{ hits=searchDB(dbIn.value);
+      dbRes.hidden=!dbIn.value.trim();
+      dbRes.innerHTML=hits.length?hits.map((x,i)=>`<li><button type="button" role="option" data-dbi="${i}"><span class="dbn"><b>${esc(x.name)}</b><small>${esc(x.brand)} · ${discType(x.speed)}</small></span><span class="nums"><span>${x.speed}</span><span>${x.glide}</span><span>${x.turn}</span><span>${x.fade}</span></span></button></li>`).join("")
+        :`<li class="dbnone">Ingen treff. Skriv inn discen sjølv nedanfor.</li>`; };
+    dbIn.addEventListener("input",show);
+    dbRes.addEventListener("click",e=>{ const b=e.target.closest("[data-dbi]"); if(!b)return; const x=hits[+b.dataset.dbi];
+      $("#f-name").value=x.name; $("#f-brand").value=x.brand;
+      ["speed","glide","turn","fade"].forEach(k=>$("#f-"+k).value=x[k]);
+      dbIn.value=""; dbRes.hidden=true; pv();
+      $("#f-plastic").focus(); });
+  }
   const pickColor=c=>{ color=c; document.querySelectorAll("[data-color]").forEach(o=>o.setAttribute("aria-pressed",o.dataset.color===c)); };
   S.onPhoto=(url,rim)=>{ photo=url; if(rim) pickColor(rim); $("#rmPhoto").hidden=false; pv(); };
   $("#rmPhoto").onclick=()=>{ photo=null; $("#rmPhoto").hidden=true; pv(); };
@@ -887,7 +1211,8 @@ document.addEventListener("click",e=>{
   const lb=e.target.closest("[data-layout]"); if(lb){ S.layout=lb.dataset.layout; savePrefs(); document.querySelectorAll("[data-layout]").forEach(b=>b.setAttribute("aria-pressed",b===lb)); renderBagList(); return; }
   const o=e.target.closest("[data-open]"); if(o){ location.hash="#disc-"+o.dataset.open; return; }
   const f=e.target.closest("[data-filter]"); if(f){ S.filter=f.dataset.filter; document.querySelectorAll("[data-filter]").forEach(b=>b.setAttribute("aria-pressed",b===f)); renderBagList(); renderBagChart(false); return; }
-  const th=e.target.closest("[data-throw]"); if(th){ const s=th.closest(".card").querySelector("svg.flightsvg"); s&&playFlight(s.id); return; }
+  const th=e.target.closest("[data-throw]"); if(th){ playEl(th.closest(".card").querySelector("svg.flightsvg, .scene3d")); return; }
+  const vb=e.target.closest("[data-view]"); if(vb){ if(S.view!==vb.dataset.view){ S.view=vb.dataset.view; savePrefs(); rerenderKeepViewer(); } return; }
   if(e.target.closest("[data-cam]")){ $("#camIn").click(); return; }
   if(e.target.closest("[data-gallery]")){ $("#galIn").click(); return; }
   const nb=e.target.closest("[data-night]"); if(nb){ setTheme(isDarkNow()?"light":"night"); return; }
