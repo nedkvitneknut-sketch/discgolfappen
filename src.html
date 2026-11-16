@@ -1,0 +1,970 @@
+<title>Discbaggen</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: phone-width app column. Large-title nav bar, inset grouped lists, translucent tab bar. System type, neutral greys, one green tint. */
+:root{
+  --bg:#f2f2f7; --surface:#ffffff; --fill:rgba(118,118,128,.12); --fill2:rgba(118,118,128,.08);
+  --line:rgba(60,60,67,.16); --fg:#1c1c1e; --muted:rgba(60,60,67,.62); --accent:#248a3d; --accent-ink:#ffffff;
+  --turn:#c25400; --fade:#0a64d6; --warn:#d70015; --star:#f5b800; --seg-on:#ffffff;
+  --shadow:0 1px 2px rgba(0,0,0,.04);
+  --f-display:-apple-system,BlinkMacSystemFont,"SF Pro Display",Inter,"Segoe UI",Roboto,system-ui,sans-serif;
+  --f-body:-apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,"Segoe UI",Roboto,system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#000000; --surface:#1c1c1e; --fill:rgba(118,118,128,.24); --fill2:rgba(118,118,128,.16);
+  --line:rgba(84,84,88,.55); --fg:#f5f5f7; --muted:rgba(235,235,245,.6); --accent:#30d158; --accent-ink:#00230b;
+  --turn:#ff9f0a; --fade:#409cff; --warn:#ff453a; --star:#ffd60a; --seg-on:#636366;
+  --shadow:none; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#000000; --surface:#1c1c1e; --fill:rgba(118,118,128,.24); --fill2:rgba(118,118,128,.16);
+  --line:rgba(84,84,88,.55); --fg:#f5f5f7; --muted:rgba(235,235,245,.6); --accent:#30d158; --accent-ink:#00230b;
+  --turn:#ff9f0a; --fade:#409cff; --warn:#ff453a; --star:#ffd60a; --seg-on:#636366;
+  --shadow:none; color-scheme:dark}
+:root.light{
+  --bg:#f2f2f7; --surface:#ffffff; --fill:rgba(118,118,128,.12); --fill2:rgba(118,118,128,.08);
+  --line:rgba(60,60,67,.16); --fg:#1c1c1e; --muted:rgba(60,60,67,.62); --accent:#248a3d; --accent-ink:#ffffff;
+  --turn:#c25400; --fade:#0a64d6; --warn:#d70015; --star:#f5b800; --seg-on:#ffffff;
+  --shadow:0 1px 2px rgba(0,0,0,.04); color-scheme:light}
+/* Nattrunde: dark, with a faint green cast to echo glow plastic */
+:root.night{
+  --bg:#000000; --surface:#0f1511; --fill:rgba(120,160,130,.18); --fill2:rgba(120,160,130,.1);
+  --line:rgba(120,160,130,.22); --fg:#f2f7f3; --muted:rgba(225,240,228,.58); --accent:#5be37d; --accent-ink:#00230b;
+  --turn:#ff9f0a; --fade:#409cff; --warn:#ff453a; --star:#ffd60a; --seg-on:#3a4a3e;
+  --shadow:none; color-scheme:dark}
+
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.4;letter-spacing:-.01em;-webkit-font-smoothing:antialiased;transition:background-color .35s ease,color .35s ease}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit;letter-spacing:inherit}
+button{-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+
+.app{max-width:480px;margin:0 auto;min-height:100%;position:relative;padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px 8px;display:flex;align-items:center;gap:8px;min-height:56px}
+.topbar h1{font-family:var(--f-display);font-weight:700;font-size:28px;letter-spacing:-.025em;margin:0;line-height:1.1;text-wrap:balance;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar h1.navtitle{font-size:17px;font-weight:600;letter-spacing:-.01em;text-align:center}
+.topbar .sub{font-size:13px;color:var(--muted);font-weight:500;letter-spacing:0}
+.iconbtn{width:36px;height:36px;border-radius:50%;border:0;background:var(--fill);color:var(--accent);display:grid;place-items:center;cursor:pointer;flex:none;text-decoration:none;transition:background-color .2s,color .2s}
+.iconbtn svg{width:19px;height:19px}
+.iconbtn[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.iconbtn.fav{color:var(--muted)}
+.iconbtn.fav[aria-pressed="true"]{background:var(--fill);color:var(--star)}
+.view{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:6px 28px;display:flex;flex-direction:column;gap:18px}
+
+.notice{font-size:13px;color:var(--muted);background:var(--fill2);border-radius:12px;padding:10px 12px;line-height:1.45}
+.notice.err{color:var(--warn)}
+
+/* Section headings and cards */
+.section-h{font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:-.02em;margin:10px 0 -8px}
+.card{background:var(--surface);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:12px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
+
+/* Bag hero */
+.hero{border-radius:20px;padding:20px 16px 16px;background:var(--surface);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:16px;overflow:hidden}
+.fan{display:flex;justify-content:center;padding-top:2px}
+.fan-d{--s:clamp(58px,20vw,80px);position:relative;border:0;padding:0;background:none;cursor:pointer;width:var(--s);height:var(--s);border-radius:50%;margin-left:calc(var(--s) * -0.26);transition:transform .3s cubic-bezier(.2,.8,.2,1);flex:none}
+.fan-d:first-child{margin-left:0}
+.fan-d:hover,.fan-d:focus-visible{transform:translateY(-6px)}
+.fan-d img{width:100%;height:100%;border-radius:50%;display:block;box-shadow:0 6px 16px rgba(0,0,0,.16),0 0 0 .5px rgba(0,0,0,.12);animation:spin 40s linear infinite}
+.fanstar{position:absolute;right:0;top:0;width:20px;height:20px;border-radius:50%;background:var(--surface);color:var(--star);display:grid;place-items:center;box-shadow:0 1px 4px rgba(0,0,0,.18);z-index:2}
+.fanstar svg{width:13px;height:13px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);text-align:center}
+.stats>div{min-width:0;padding-inline:4px}
+.stats>div+div{border-left:.5px solid var(--line)}
+.stats b{font-family:var(--f-display);font-size:26px;font-weight:600;letter-spacing:-.02em;line-height:1.1;display:block;font-variant-numeric:tabular-nums}
+.stats b span{font-size:15px;font-weight:500;color:var(--muted)}
+.stats small{font-size:12px;color:var(--muted);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slots{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.slot{background:var(--fill2);border-radius:10px;padding:7px 2px 6px;text-align:center;min-width:0}
+.slot b{font-size:17px;font-weight:600;display:block;line-height:1.2;font-variant-numeric:tabular-nums}
+.slot small{font-size:11px;color:var(--muted)}
+.slot.miss b{color:var(--turn)}
+.tip{margin:0;font-size:13px;color:var(--muted);text-align:center;text-wrap:balance;line-height:1.45}
+.tip b{color:var(--fg);font-weight:600}
+
+/* Search, segmented control, filter */
+.bagtools{display:flex;gap:8px;align-items:center}
+.search{flex:1;min-width:0;position:relative}
+.search input{width:100%;border:0;background:var(--fill);border-radius:10px;padding:8px 10px 8px 32px;font-size:16px;-webkit-appearance:none;appearance:none}
+.search input::placeholder{color:var(--muted)}
+.search svg{position:absolute;left:9px;top:50%;width:16px;height:16px;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--fill);border-radius:9px;padding:2px;gap:2px}
+.seg button{border:0;background:transparent;border-radius:7px;padding:6px 8px;font-size:13px;font-weight:500;cursor:pointer;color:var(--fg);transition:background-color .2s}
+.seg button[aria-pressed="true"]{background:var(--seg-on);font-weight:600;box-shadow:0 3px 8px rgba(0,0,0,.12),0 3px 1px rgba(0,0,0,.04)}
+.bagtools .seg{flex:none;grid-template-columns:auto auto}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding:0 16px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:0;background:var(--fill);border-radius:999px;padding:6px 14px;font-size:14px;font-weight:500;cursor:pointer;color:var(--fg);transition:background-color .2s,color .2s}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.count{font-size:13px;color:var(--muted);margin:-8px 0 -10px 4px}
+
+/* Inset grouped list */
+.disclist{display:flex;flex-direction:column;gap:0;margin:0;padding:0;list-style:none}
+.disccard{display:flex;align-items:center;gap:10px;background:var(--surface);padding:10px 14px 10px 14px;
+  background-image:linear-gradient(var(--line),var(--line));background-repeat:no-repeat;background-size:calc(100% - 92px) .5px;background-position:right top}
+.disclist>li:first-child>.disccard,.disclist>li.grp+li>.disccard{background-image:none;border-top-left-radius:14px;border-top-right-radius:14px}
+.disclist>li:last-child>.disccard,.disclist>li:has(+li.grp)>.disccard{border-bottom-left-radius:14px;border-bottom-right-radius:14px}
+.dc-main{flex:1;min-width:0;display:grid;grid-template-columns:64px 1fr auto;gap:14px;align-items:center;background:none;border:0;padding:0;text-align:left;cursor:pointer;color:inherit;border-radius:10px}
+.dc-main:active{opacity:.6}
+.thumb{width:64px;height:64px;border-radius:50%;object-fit:cover;display:block;box-shadow:0 0 0 .5px rgba(0,0,0,.12),0 2px 6px rgba(0,0,0,.1)}
+.disccard .meta{min-width:0}
+.disccard .name{font-size:17px;font-weight:600;letter-spacing:-.02em;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.disccard .kind{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini{width:44px;height:60px}
+.nums{display:flex;gap:4px;margin-top:6px}
+.nums span{font-weight:600;font-size:13px;min-width:24px;text-align:center;padding:1px 5px;border-radius:6px;background:var(--fill2);font-variant-numeric:tabular-nums;letter-spacing:0}
+.cmp{flex:none;width:28px;height:28px;border-radius:50%;border:1.5px solid var(--accent);background:transparent;color:var(--accent);display:grid;place-items:center;cursor:pointer;transition:background-color .2s}
+.cmp svg{width:14px;height:14px}
+.cmp[aria-pressed="true"]{border-color:var(--sel);background:var(--sel);color:#fff}
+.compact .disccard{padding:7px 12px 7px 14px;background-size:calc(100% - 66px) .5px}
+.compact .dc-main{grid-template-columns:38px 1fr auto;gap:12px}
+.compact .thumb{width:38px;height:38px}
+.compact .disccard .name{font-size:16px}
+.compact .disccard .kind{font-size:12px}
+.compact .nums{margin-top:0}
+.compact .nums span{font-size:12px;min-width:22px}
+.compact .cmp{width:26px;height:26px}
+.disclist .grp{display:flex;justify-content:space-between;align-items:baseline;padding:20px 14px 6px;font-size:13px;font-weight:400;color:var(--muted);text-transform:uppercase;letter-spacing:.02em}
+.disclist .grp:first-child{padding-top:4px}
+.favmark{display:inline-flex;color:var(--star);margin-left:5px;vertical-align:-1px}
+.favmark svg{width:13px;height:13px}
+.cmpchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.cmpchip{border:0;background:var(--fill2);border-radius:999px;padding:5px 11px 5px 9px;font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.cmpchip i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.cmpchip.clear{background:transparent;color:var(--accent)}
+.hintline{font-size:13px;color:var(--muted);margin:8px 0 0;line-height:1.45}
+.empty{text-align:center;padding:40px 12px;color:var(--muted);line-height:1.45}
+.empty b{display:block;font-family:var(--f-display);font-size:20px;font-weight:600;letter-spacing:-.02em;color:var(--fg);margin-bottom:4px}
+
+/* Disc detail */
+.stage{position:relative;aspect-ratio:1/0.86;max-width:100%;border-radius:20px;overflow:hidden;background:radial-gradient(110% 90% at 50% 25%,var(--surface) 0%,var(--bg) 100%);touch-action:pan-y;transition:background .4s}
+.stage canvas{display:block;width:100%;height:100%}
+.stage.night{background:radial-gradient(110% 90% at 50% 35%,#0d1a10 0%,#000 100%)}
+.stage .tools{position:absolute;right:12px;top:12px;display:flex;gap:6px}
+.stage .hint{position:absolute;left:14px;bottom:12px;font-size:12px;color:var(--muted)}
+.stage.night .hint{color:rgba(225,240,228,.5)}
+.pill{border:0;background:var(--fill);color:var(--accent);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.stage.night .pill{background:rgba(255,255,255,.12);color:#c9f5d3}
+.pill svg{width:10px;height:10px;vertical-align:0;margin-right:5px}
+.pill.throw{background:var(--accent);color:var(--accent-ink);padding:6px 13px}
+
+.titleblock{display:flex;flex-direction:column;gap:2px}
+.titleblock h2{font-family:var(--f-display);font-size:34px;letter-spacing:-.03em;line-height:1.05;margin:0;font-weight:700;text-wrap:balance}
+.titleblock .kind{color:var(--muted);font-size:15px}
+.stab{display:inline-block;margin-top:8px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--fill);width:max-content}
+
+.stamp{display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-radius:16px;box-shadow:var(--shadow);padding-block:12px}
+.stamp div{text-align:center;border-left:.5px solid var(--line)}
+.stamp div:first-child{border-left:0}
+.stamp b{display:block;font-family:var(--f-display);font-size:28px;line-height:1.1;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stamp small{font-size:12px;color:var(--muted)}
+
+.numexpl{display:flex;flex-direction:column;gap:0;padding-block:6px}
+.ne{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:start;padding-block:12px}
+.ne+.ne{border-top:.5px solid var(--line)}
+.ne .big{font-family:var(--f-display);font-size:24px;font-weight:600;line-height:1.1;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.ne h4{margin:0;font-size:15px;font-weight:600}
+.ne p{margin:2px 0 10px;font-size:14px;color:var(--muted);line-height:1.45}
+.scale{position:relative;height:4px;border-radius:2px;background:var(--fill)}
+.scale .fill{position:absolute;top:0;bottom:0;border-radius:2px;background:var(--accent)}
+.scale .dot{position:absolute;top:50%;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 0 0 .5px rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.2);transform:translate(-50%,-50%)}
+.scale-l{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:6px}
+
+.controls{display:flex;flex-direction:column;gap:12px;margin-top:14px;padding-top:14px;border-top:.5px solid var(--line)}
+.slider label{display:flex;justify-content:space-between;font-size:14px;font-weight:500}
+.slider label span{color:var(--muted);font-weight:400}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.cardhead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;font-size:13px;color:var(--muted)}
+.flightsvg{width:100%;height:auto;display:block}
+.flightsvg text{font-family:var(--f-body)}
+.desc{font-size:16px;line-height:1.55;margin:0;max-width:65ch}
+
+.actions{display:flex;gap:10px}
+.btn{flex:1;border:0;background:var(--fill);color:var(--accent);border-radius:12px;padding:12px 14px;font-weight:600;cursor:pointer;font-size:16px;text-align:center;text-decoration:none}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--warn)}
+.btn:active,.pill:active,.chip:active{opacity:.7}
+.confirm{background:var(--surface);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px;font-size:15px;box-shadow:var(--shadow)}
+
+/* Explainer */
+.ex{display:flex;flex-direction:column;gap:10px}
+.ex h3{font-family:var(--f-display);font-size:22px;letter-spacing:-.02em;margin:0;line-height:1.15;font-weight:700;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.ex h3 small{font-family:var(--f-body);font-size:13px;color:var(--muted);font-weight:500;letter-spacing:0}
+.ex p{margin:0;font-size:15px;max-width:65ch;line-height:1.5}
+.ex ul{margin:0;padding-left:18px;font-size:15px;color:var(--muted);line-height:1.5}
+.exsvg{width:100%;height:auto;display:block;margin-top:4px}
+.exsvg text{font-family:var(--f-body)}
+
+/* Form */
+form{display:flex;flex-direction:column;gap:16px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label,.field>span{font-size:13px;font-weight:400!important;color:var(--muted);padding-left:4px}
+.field input,.field select,.field textarea{border:0;background:var(--surface);border-radius:10px;padding:11px 12px;width:100%;min-width:0;font-size:16px;box-shadow:var(--shadow)}
+.field textarea{min-height:96px;resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.grid4 .field{gap:4px}
+.grid4 input{text-align:center;font-size:20px;font-weight:600;padding:9px 4px;font-variant-numeric:tabular-nums}
+.grid4 label{text-align:center;font-size:12px;padding-left:0}
+.colors{display:flex;flex-wrap:wrap;gap:10px;padding-left:2px}
+.colors button{width:30px;height:30px;border-radius:50%;border:0;cursor:pointer;box-shadow:0 0 0 .5px rgba(0,0,0,.15)}
+.colors button[aria-pressed="true"]{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)}
+.photobox{display:grid;grid-template-columns:88px 1fr;gap:14px;align-items:center;background:var(--surface);border-radius:16px;padding:14px;box-shadow:var(--shadow)}
+.photobox .thumb{width:88px;height:88px}
+.photoside{display:flex;flex-direction:column;gap:8px;min-width:0}
+.photobtns{display:flex;flex-wrap:wrap;gap:8px}
+.btn.small{flex:none;padding:7px 12px;font-size:14px;display:inline-flex;align-items:center;gap:6px;border-radius:999px}
+.btn.small svg{width:16px;height:16px}
+.linkbtn{border:0;background:none;padding:0;color:var(--warn);font-size:14px;cursor:pointer;align-self:flex-start}
+.sheet{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.92);color:#f5f5f7;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+  padding-top:max(16px,env(safe-area-inset-top,0px));padding-bottom:max(16px,env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.sheet-t{margin:0;font-weight:500;text-align:center;font-size:15px;color:rgba(235,235,245,.75)}
+.crop{width:min(86vw,340px);max-width:100%;aspect-ratio:1;border-radius:20px;overflow:hidden;touch-action:none;cursor:grab}
+.crop canvas{width:100%;height:100%;display:block}
+.sheet-zoom{display:flex;align-items:center;gap:12px;font-size:14px;width:min(86vw,340px)}
+.sheet-zoom input{flex:1;accent-color:#30d158}
+.sheet-btns{display:flex;gap:10px;width:min(86vw,340px)}
+.sheet .btn{background:rgba(118,118,128,.3);color:#fff}
+.sheet .btn.primary{background:#30d158;color:#00230b}
+
+/* Tab bar */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:6;background:color-mix(in srgb,var(--surface) 80%,transparent);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+.tabbar nav{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr)}
+.tabbar a{display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 4px 8px;font-size:10.5px;font-weight:500;color:var(--muted);text-decoration:none;letter-spacing:0}
+.tabbar a svg{width:25px;height:25px}
+.tabbar a[aria-current="page"]{color:var(--accent)}
+
+/* Flight animation */
+.night polyline.seg{filter:drop-shadow(0 0 2px rgba(91,227,125,.45))}
+.ripple{transform-box:fill-box;transform-origin:center;animation:ripple 1s cubic-bezier(.2,.8,.2,1) forwards;stroke-width:1.5}
+@keyframes ripple{from{transform:scale(1);opacity:.8}to{transform:scale(4);opacity:0}}
+.end.land{transform-box:fill-box;transform-origin:center;animation:pop .4s cubic-bezier(.2,.8,.2,1)}
+@keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.3)}100%{transform:scale(1)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="app">
+  <header class="topbar" id="topbar"></header>
+  <main id="main"></main>
+</div>
+<input type="file" id="camIn" accept="image/*" capture="environment" hidden>
+<input type="file" id="galIn" accept="image/*" hidden>
+<div class="tabbar"><nav aria-label="Hovudmeny">
+  <a href="#bag" data-tab="bag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>Baggen</a>
+  <a href="#tal" data-tab="tal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>Flygetala</a>
+  <a href="#ny" data-tab="ny"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Legg til</a>
+</nav></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const IMGS = __IMGS__;
+const DEFAULTS = [
+ {id:"aviar",name:"Aviar",brand:"Innova",plastic:"DX Glow",speed:2,glide:3,turn:0,fade:1,color:"#abd490",img:"aviar",created:1,
+  desc:"Innova Aviar er den mest populære diskgolf-modellen til Innova. Den er anvendelig til mye, og til å stole på under alle forhold. Dette er en modell uten bead som gir svært godt grep. En disk som flyr rett, med en forutsigbar avslutning."},
+ {id:"tl",name:"TL",brand:"Innova",plastic:"DX Glow",speed:8,glide:4,turn:0,fade:1,color:"#abd595",img:"tl",created:2,
+  desc:"Den er ideell for spillere som ønsker å bytte fra understabil plastikk til mer kontrollerbare disker. Med sin lille fade hjelper TL3 med å kamuflere dårlige kast, og gir deg en disk som gir kontrollert svev med minimal uønsket avslutning."},
+ {id:"beast",name:"Beast",brand:"Innova",plastic:"DX Glow",speed:10,glide:5,turn:-2,fade:2,color:"#a1cc86",img:"beast",created:3,
+  desc:"Beast er en distance driver med god glide og forutsigbar avsluttning. Perfekt for nybegynnere som ønsker å dra ut lengde i kastene sine."}
+];
+const LINE_COLORS = ["#30b350","#ff9500","#007aff","#af52de","#ff2d55","#32ade6","#a2845e","#8e8e93"];
+const ARMS = [
+ {v:4.5,label:"Nybyrjar",m:"ca. 50 m"},{v:6.5,label:"Litt øvd",m:"ca. 65 m"},
+ {v:8.5,label:"Middels",m:"ca. 85 m"},{v:10.5,label:"Sterk",m:"ca. 105 m"},{v:13,label:"Proff",m:"130 m +"}];
+
+const S = { shot:{dist:70,shape:"rett",wind:"stille"}, discs:[], mode:"loading", filter:"alle", q:"", cmp:[], cmpMsg:"", layout:null, arm:2, hand:"rh", night:false, db:null, error:"" };
+try{ const p=JSON.parse(localStorage.getItem("discbag.prefs")||"{}"); if(p.arm!=null)S.arm=p.arm; if(p.hand)S.hand=p.hand; S.theme=p.theme||(p.night?"night":"auto"); S.night=S.theme==="night"; if(p.layout)S.layout=p.layout; if(Array.isArray(p.cmp))S.cmp=p.cmp.slice(0,8); if(p.shot)Object.assign(S.shot,p.shot); }catch(e){}
+function savePrefs(){ try{localStorage.setItem("discbag.prefs",JSON.stringify({arm:S.arm,hand:S.hand,theme:S.theme,layout:S.layout,cmp:S.cmp,shot:S.shot}))}catch(e){} }
+
+const $ = s=>document.querySelector(s);
+const esc = s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const sstep=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
+const fmt=n=>(n>0?"+":"")+n;
+const fmtTurn=n=>n>0?"+"+n:String(n);
+
+function discType(s){ return s<=3?"Putter":s<=5?"Midrange":s<=9?"Fairway driver":"Distance driver"; }
+function typeKey(s){ return s<=3?"putter":s<=5?"mid":s<=9?"fairway":"distance"; }
+function stability(d){
+  const v=d.turn+d.fade;
+  if(v>=3) return "Overstabil";
+  if(v>=1.5) return "Stabil–overstabil";
+  if(v>=0) return "Stabil";
+  if(v>=-1.5) return "Litt understabil";
+  return "Understabil";
+}
+
+/* ---------- Flight model (top-down, metres) ---------- */
+function flight(d, armV, hand){
+  const s=Math.max(1,d.speed), a=clamp(armV/s,0.35,1.35);
+  const pow=Math.min(1,a);
+  const D=(22+s*7.4+d.glide*5.2)*Math.pow(pow,0.85);
+  const turnEff=d.turn*Math.pow(clamp(a,0,1.25),2.2);
+  const fadeEff=d.fade+Math.max(0,1-a)*2.6;
+  const kT=D*0.065, kF=D*0.05;
+  const turnEnd=0.62+d.glide*0.02;
+  const sign = hand==="rh"?1:-1;
+  const pts=[];
+  for(let i=0;i<=60;i++){
+    const t=i/60;
+    const y=D*(1-Math.pow(1-t,1.35));
+    let x=-turnEff*kT*sstep(0.1,turnEnd,t) - fadeEff*kF*Math.pow(sstep(turnEnd-0.08,1,t),1.7);
+    if(d.turn>0) x-=d.turn*kT*0.3*sstep(0,0.5,t);
+    pts.push([x*sign,y]);
+  }
+  return {pts,D,turnEff,fadeEff,a};
+}
+
+const FLY={}; let flyCount=0;
+const ICON_PLAY=`<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 1.5l8 4.5-8 4.5z" fill="currentColor"/></svg>`;
+function flightSVG(list, opts={}){
+  const W=opts.w||320, H=opts.h||400, pad={l:34,r:14,t:22,b:30};
+  const arm=ARMS[S.arm].v;
+  const fl=list.map((d,i)=>({d,f:flight(d,opts.arms?opts.arms[i]:arm,S.hand)}));
+  const maxD=Math.max(60,...fl.map(o=>o.f.D),opts.target?opts.target.y+6:0);
+  const yMax=Math.ceil(maxD/20)*20;
+  let xMax=10; fl.forEach(o=>o.f.pts.forEach(p=>xMax=Math.max(xMax,Math.abs(p[0])))); if(opts.target) xMax=Math.max(xMax,Math.abs(opts.target.x)+4);
+  xMax=Math.ceil((xMax+2)/5)*5;
+  const sx=x=>pad.l+(x+xMax)/(2*xMax)*(W-pad.l-pad.r);
+  const sy=y=>H-pad.b-(y/yMax)*(H-pad.t-pad.b);
+  const id="fly"+(++flyCount);
+  let g=`<defs><clipPath id="${id}c"><circle r="9"/></clipPath></defs>`;
+  for(let y=0;y<=yMax;y+=20){ g+=`<line x1="${pad.l}" x2="${W-pad.r}" y1="${sy(y)}" y2="${sy(y)}" stroke="var(--line)" stroke-width="1"/>`;
+    g+=`<text x="${pad.l-6}" y="${sy(y)+4}" text-anchor="end" font-size="10" fill="var(--muted)">${y}</text>`; }
+  [-xMax,-xMax/2,0,xMax/2,xMax].forEach(x=>{ g+=`<line x1="${sx(x)}" x2="${sx(x)}" y1="${pad.t}" y2="${H-pad.b}" stroke="var(--line)" stroke-width="${x===0?1.4:1}" ${x===0?'stroke-dasharray="3 4"':''}/>`;
+    g+=`<text x="${sx(x)}" y="${H-pad.b+14}" text-anchor="middle" font-size="10" fill="var(--muted)">${x===0?"0":Math.abs(x)}</text>`; });
+  g+=`<text x="${pad.l}" y="${H-3}" font-size="10" fill="var(--muted)">← venstre (m)</text><text x="${W-pad.r}" y="${H-3}" text-anchor="end" font-size="10" fill="var(--muted)">høgre (m) →</text>`;
+  g+=`<text x="${pad.l-6}" y="${pad.t-7}" text-anchor="end" font-size="10" fill="var(--muted)">m</text>`;
+  g+=`<rect x="${sx(0)-7}" y="${sy(0)-3}" width="14" height="6" rx="2" fill="var(--muted)"/>`;
+  if(opts.target){ const tx=sx(opts.target.x), ty=sy(opts.target.y);
+    g+=`<g aria-label="Kurv"><circle cx="${tx}" cy="${ty}" r="15" fill="var(--accent)" opacity=".14"/><circle cx="${tx}" cy="${ty}" r="8" fill="none" stroke="var(--fg)" stroke-width="1.6"/>`
+      +`<path d="M${tx-5} ${ty-1}v4M${tx-1.7} ${ty-2}v6M${tx+1.7} ${ty-2}v6M${tx+5} ${ty-1}v4" stroke="var(--fg)" stroke-width="1.2" stroke-linecap="round"/>`
+      +`<text x="${tx}" y="${ty-13}" text-anchor="middle" font-size="10" font-weight="700" fill="var(--fg)">Kurv</text></g>`; }
+  const items=[];
+  fl.forEach((o,i)=>{
+    const col=LINE_COLORS[i%LINE_COLORS.length];
+    const sp=o.f.pts.map(p=>[sx(p[0]),sy(p[1])]);
+    const n=sp.length, te=Math.round((0.62+o.d.glide*0.02)*n);
+    const segs=opts.single?[[0,Math.round(n*0.12),"var(--muted)"],[Math.round(n*0.12),te-6,"var(--turn)"],[te-6,n-1,"var(--fade)"]]:[[0,n-1,col]];
+    const w=opts.single?4:3;
+    const pstr=(a,b)=>sp.slice(a,b+1).map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" ");
+    if(!opts.static) g+=`<polyline points="${pstr(0,n-1)}" fill="none" stroke="${opts.single?"var(--fg)":col}" stroke-opacity=".13" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
+    segs.forEach(([a,b,c])=>{ g+=`<polyline class="seg" data-i="${i}" data-a="${a}" data-b="${b}" pathLength="1" stroke-dasharray="1 1" points="${pstr(a,b)}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`; });
+    const e=sp[n-1], ec=opts.single?"var(--fg)":col;
+    g+=`<circle class="end" data-i="${i}" cx="${e[0].toFixed(1)}" cy="${e[1].toFixed(1)}" r="5" fill="${ec}" stroke="var(--surface)" stroke-width="2"/>`;
+    if(opts.single) g+=`<text class="dist" data-i="${i}" x="${clamp(e[0],pad.l+30,W-pad.r-30).toFixed(1)}" y="${(e[1]-12).toFixed(1)}" text-anchor="middle" font-size="12" font-weight="700" fill="var(--fg)">ca. ${Math.round(o.f.D)} m</text>`;
+    if(!opts.static) g+=`<g class="flyer" data-i="${i}" opacity="0"><g class="fly-body"><circle r="11" fill="${opts.single?"var(--accent)":col}" opacity=".35"/><g class="fly-spin"><image href="${thumbSrc(o.d)}" x="-9" y="-9" width="18" height="18" clip-path="url(#${id}c)"/></g></g></g>`;
+    items.push({sp,D:o.f.D,col:ec});
+  });
+  FLY[id]={items,raf:0};
+  return {svg:`<svg id="${id}" class="flightsvg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Flygelinje sett ovanfrå">${g}</svg>`, fl, id};
+}
+function playIn(sel){ const s=document.querySelector(sel+" svg.flightsvg"); if(s) playFlight(s.id); }
+function playFlight(id){
+  const svg=document.getElementById(id), data=FLY[id]; if(!svg||!data)return;
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if(data.raf) cancelAnimationFrame(data.raf);
+  const segs=[...svg.querySelectorAll(".seg")], ends=[...svg.querySelectorAll(".end")], flyers=[...svg.querySelectorAll(".flyer")], dists=[...svg.querySelectorAll(".dist")];
+  svg.querySelectorAll(".ripple").forEach(r=>r.remove());
+  segs.forEach(s=>s.style.strokeDashoffset=1);
+  ends.forEach(e=>{e.style.opacity=0;e.classList.remove("land");});
+  const DUR=2700, STAG=160; let t0=null, spin=0; const done=new Set();
+  const step=now=>{
+    if(t0===null) t0=now;
+    if(!svg.isConnected){ data.raf=0; return; }
+    let all=true; spin=(spin+24)%360;
+    data.items.forEach((it,i)=>{
+      const p=clamp((now-t0-i*STAG)/DUR,0,1); if(p<1) all=false;
+      const n=it.sp.length, f=p*(n-1), k=Math.min(n-2,Math.floor(f)), r=f-k;
+      const a=it.sp[k], b=it.sp[k+1], x=a[0]+(b[0]-a[0])*r, y=a[1]+(b[1]-a[1])*r;
+      segs.forEach(s=>{ if(+s.dataset.i!==i)return; const A=+s.dataset.a,B=+s.dataset.b; s.style.strokeDashoffset=1-clamp((f-A)/Math.max(1,B-A),0,1); });
+      const fe=flyers[i];
+      if(fe){
+        const hd=Math.atan2(b[0]-a[0],-(b[1]-a[1]))*180/Math.PI;
+        const sc=1.3-0.4*p;
+        fe.setAttribute("opacity",p>0&&p<1?1:0);
+        fe.setAttribute("transform",`translate(${x.toFixed(1)},${y.toFixed(1)})`);
+        fe.firstElementChild.setAttribute("transform",`rotate(${hd.toFixed(1)}) scale(${sc.toFixed(2)},${(sc*0.5).toFixed(2)})`);
+        fe.querySelector(".fly-spin").setAttribute("transform",`rotate(${spin})`);
+      }
+      const dist=dists.find(d=>+d.dataset.i===i);
+      if(dist) dist.textContent=p<1?`${Math.round(it.D*(1-Math.pow(1-p,1.35)))} m`:`ca. ${Math.round(it.D)} m`;
+      if(p>=1&&!done.has(i)){ done.add(i); const e=ends[i]; e.style.opacity=1; e.classList.add("land");
+        const rp=document.createElementNS("http://www.w3.org/2000/svg","circle");
+        rp.setAttribute("class","ripple"); rp.setAttribute("cx",it.sp[n-1][0]); rp.setAttribute("cy",it.sp[n-1][1]); rp.setAttribute("r","6"); rp.setAttribute("fill","none"); rp.setAttribute("stroke",it.col);
+        svg.appendChild(rp); }
+    });
+    data.raf=all?0:requestAnimationFrame(step);
+  };
+  data.raf=requestAnimationFrame(step);
+}
+function throwHead(label){ return `<div class="cardhead"><span>Sett ovanfrå · ${esc(ARMS[S.arm].label.toLowerCase())} arm</span><button class="pill throw" data-throw>${ICON_PLAY}${label}</button></div>`; }
+const ICON_MOON=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>`;
+const ICON_SUN=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></svg>`;
+function isDarkNow(){ if(S.theme==="night") return true; if(S.theme==="light") return false; try{ const m=getComputedStyle(document.body).backgroundColor.match(/\d+(\.\d+)?/g); if(!m) return false; return (0.299*m[0]+0.587*m[1]+0.114*m[2])/255<0.5; }catch(e){ return false; } }
+function nightBtn(){ const dark=isDarkNow(); return `<button class="iconbtn" data-night aria-label="${dark?"Byt til lyst tema":"Byt til nattrunde"}" title="${dark?"Lyst tema":"Nattrunde"}">${dark?ICON_SUN:ICON_MOON}</button>`; }
+
+function miniSVG(d){
+  const f=flight(d,ARMS[S.arm].v,S.hand); const W=54,H=72;
+  const xm=Math.max(12,...f.pts.map(p=>Math.abs(p[0])));
+  const p=f.pts.map(p=>`${(W/2+p[0]/xm*(W/2-6)).toFixed(1)},${(H-6-p[1]/150*(H-12)).toFixed(1)}`).join(" ");
+  const e=f.pts[f.pts.length-1];
+  return `<svg class="mini" viewBox="0 0 ${W} ${H}" aria-hidden="true"><line x1="${W/2}" x2="${W/2}" y1="4" y2="${H-4}" stroke="var(--line)" stroke-dasharray="2 3"/><polyline points="${p}" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round"/><circle cx="${(W/2+e[0]/xm*(W/2-6)).toFixed(1)}" cy="${(H-6-e[1]/150*(H-12)).toFixed(1)}" r="2.8" fill="var(--fg)"/></svg>`;
+}
+
+/* ---------- Disc artwork ---------- */
+const texCache={};
+function shade(hex,amt){ let c=hex.replace("#",""); if(c.length===3)c=c.split("").map(x=>x+x).join("");
+  const n=parseInt(c,16); let r=n>>16,g=(n>>8)&255,b=n&255;
+  const f=v=>clamp(Math.round(amt<0?v*(1+amt):v+(255-v)*amt),0,255);
+  return "#"+[f(r),f(g),f(b)].map(v=>v.toString(16).padStart(2,"0")).join(""); }
+function lum(hex){const n=parseInt(hex.replace("#",""),16);return (0.299*(n>>16)+0.587*((n>>8)&255)+0.114*(n&255))/255;}
+function artCanvas(d){
+  const c=document.createElement("canvas"); c.width=c.height=512; const x=c.getContext("2d");
+  const col=d.color||"#e8c34a";
+  const gr=x.createRadialGradient(220,200,40,256,256,300); gr.addColorStop(0,shade(col,.18)); gr.addColorStop(1,shade(col,-.08));
+  x.fillStyle=gr; x.fillRect(0,0,512,512);
+  const ink=lum(col)>0.55?shade(col,-.72):shade(col,.85);
+  x.strokeStyle=ink; x.globalAlpha=.35; x.lineWidth=2;
+  for(let i=0;i<48;i++){const a=i/48*Math.PI*2;x.beginPath();x.moveTo(256+Math.cos(a)*120,256+Math.sin(a)*120);x.lineTo(256+Math.cos(a)*(150+(i%3)*14),256+Math.sin(a)*(150+(i%3)*14));x.stroke();}
+  x.globalAlpha=1; x.lineWidth=3; x.beginPath(); x.arc(256,256,112,0,Math.PI*2); x.stroke();
+  x.fillStyle=ink; x.textAlign="center"; x.textBaseline="middle";
+  let fs=110; x.font=`700 ${fs}px -apple-system, "SF Pro Display", Inter, "Segoe UI", sans-serif`;
+  while(x.measureText(d.name||"").width>300&&fs>40){fs-=6;x.font=`700 ${fs}px -apple-system, "SF Pro Display", Inter, "Segoe UI", sans-serif`;}
+  x.fillText((d.name||"").toUpperCase(),256,250);
+  x.font=`600 22px -apple-system, "SF Pro Text", Inter, "Segoe UI", sans-serif`; x.fillText((d.brand||"").toUpperCase(),256,170);
+  x.font=`600 20px -apple-system, "SF Pro Text", Inter, "Segoe UI", sans-serif`; x.fillText(`${d.speed} | ${d.glide} | ${d.turn} | ${d.fade}`,256,330);
+  return c;
+}
+function thumbSrc(d){
+  if(d.photo) return d.photo;
+  if(d.img&&IMGS[d.img]) return IMGS[d.img].src;
+  const k=JSON.stringify([d.name,d.brand,d.color,d.speed,d.glide,d.turn,d.fade]);
+  if(!texCache[k]) texCache[k]=artCanvas(d).toDataURL("image/jpeg",.85);
+  return texCache[k];
+}
+function rimColor(d){ return !d.photo&&d.img&&IMGS[d.img]?IMGS[d.img].rim:(d.color||"#e8c34a"); }
+
+/* ---------- 3D viewer ---------- */
+let V=null;
+function destroyViewer(){ if(!V)return; cancelAnimationFrame(V.raf); V.ro&&V.ro.disconnect(); V.renderer.dispose(); V.scene.traverse(o=>{o.geometry&&o.geometry.dispose(); if(o.material){[].concat(o.material).forEach(m=>{m.map&&m.map.dispose();m.dispose();});}}); V=null; }
+function discProfile(d){
+  const h=d.speed<=3?0.20:d.speed<=5?0.18:0.15;
+  const rim=clamp(0.07+d.speed*0.013,0.08,0.24);
+  const sharp=d.speed>=6;
+  const top=[], bot=[];
+  for(let i=0;i<=14;i++){ const r=i/14*(1-rim*0.35); top.push(new THREE.Vector2(Math.max(r,0.0001), h - h*0.07*Math.pow(r,2))); }
+  top.push(new THREE.Vector2(0.975,h*0.82)); top.push(new THREE.Vector2(0.995,h*0.62)); top.push(new THREE.Vector2(1.0,h*0.5));
+  bot.push(new THREE.Vector2(1.0,h*0.5));
+  if(sharp){ bot.push(new THREE.Vector2(0.99,h*0.32)); bot.push(new THREE.Vector2(0.965,h*0.12)); bot.push(new THREE.Vector2(1-rim*0.75,0.0)); }
+  else { bot.push(new THREE.Vector2(0.997,h*0.3)); bot.push(new THREE.Vector2(0.985,h*0.1)); bot.push(new THREE.Vector2(0.95,0.0)); }
+  bot.push(new THREE.Vector2(1-rim,0.004)); bot.push(new THREE.Vector2(1-rim-0.01,h*0.55)); bot.push(new THREE.Vector2(1-rim-0.04,h*0.8));
+  bot.push(new THREE.Vector2(0.5,h*0.84)); bot.push(new THREE.Vector2(0.0001,h*0.85));
+  return {top,bot,h};
+}
+function buildViewer(stage, d){
+  destroyViewer();
+  if(!window.THREE){ stage.insertAdjacentHTML("beforeend",`<img src="${thumbSrc(d)}" alt="" style="position:absolute;inset:12%;width:76%;height:auto;border-radius:50%">`); return; }
+  const canvas=document.createElement("canvas"); stage.prepend(canvas);
+  let renderer; try{ renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true}); }catch(e){ canvas.remove(); stage.insertAdjacentHTML("beforeend",`<img src="${thumbSrc(d)}" alt="" style="position:absolute;inset:12%;width:76%;height:auto;border-radius:50%">`); return; }
+  renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+  renderer.outputEncoding=THREE.sRGBEncoding;
+  const scene=new THREE.Scene();
+  const cam=new THREE.PerspectiveCamera(32,1,0.1,50); cam.position.set(0,2.5,3.6); cam.lookAt(0,-0.05,0);
+  const hemi=new THREE.HemisphereLight(0xffffff,0x445544,0.95); scene.add(hemi);
+  const dir=new THREE.DirectionalLight(0xffffff,0.85); dir.position.set(2,4,3); scene.add(dir);
+  const back=new THREE.DirectionalLight(0xffffff,0.3); back.position.set(-3,1,-2); scene.add(back);
+
+  const tex=new THREE.Texture(); tex.encoding=THREE.sRGBEncoding; tex.anisotropy=renderer.capabilities.getMaxAnisotropy();
+  const photoSrc=d.photo||(d.img&&IMGS[d.img]?IMGS[d.img].src:null);
+  if(photoSrc){ const im=new Image(); im.onload=()=>{tex.image=im;tex.needsUpdate=true;}; im.src=photoSrc; }
+  else { tex.image=artCanvas(d); tex.needsUpdate=true; }
+  const rim=new THREE.Color(rimColor(d));
+  const {top,bot}=discProfile(d);
+  const gTop=new THREE.LatheGeometry(top,96);
+  const pos=gTop.attributes.position, uv=gTop.attributes.uv;
+  for(let i=0;i<pos.count;i++){ uv.setXY(i,0.5+pos.getX(i)/2,0.5-pos.getZ(i)/2); }
+  gTop.computeVertexNormals();
+  const gBot=new THREE.LatheGeometry(bot,96); gBot.computeVertexNormals();
+  const glowCol=new THREE.Color(0x9dff6e);
+  const mTop=new THREE.MeshStandardMaterial({map:tex,roughness:0.55,metalness:0,side:THREE.DoubleSide,emissive:glowCol,emissiveMap:tex,emissiveIntensity:0});
+  const mBot=new THREE.MeshStandardMaterial({color:rim,roughness:0.6,metalness:0,side:THREE.DoubleSide,emissive:glowCol,emissiveIntensity:0});
+  const disc=new THREE.Group(); disc.add(new THREE.Mesh(gTop,mTop)); disc.add(new THREE.Mesh(gBot,mBot));
+  const holder=new THREE.Group(); holder.add(disc); holder.rotation.x=0.18; holder.position.y=-0.08; scene.add(holder);
+  // soft shadow
+  const sc=document.createElement("canvas"); sc.width=sc.height=128; const sx=sc.getContext("2d"); const sg=sx.createRadialGradient(64,64,10,64,64,64); sg.addColorStop(0,"rgba(0,0,0,.35)"); sg.addColorStop(1,"rgba(0,0,0,0)"); sx.fillStyle=sg; sx.fillRect(0,0,128,128);
+  const shadow=new THREE.Mesh(new THREE.PlaneGeometry(2.6,2.6),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(sc),transparent:true,depthWrite:false}));
+  shadow.rotation.x=-Math.PI/2; shadow.position.y=-0.55; scene.add(shadow);
+
+  V={renderer,scene,cam,disc,holder,mTop,mBot,hemi,dir,back,shadow,vel:0.0045,raf:0,drag:null,t:0};
+  const resize=()=>{const r=stage.getBoundingClientRect(); renderer.setSize(r.width,r.height,false); cam.aspect=r.width/r.height; cam.updateProjectionMatrix();};
+  V.ro=new ResizeObserver(resize); V.ro.observe(stage); resize();
+  const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const base=reduce?0.0012:0.0045;
+  stage.addEventListener("pointerdown",e=>{ if(e.target.closest("button"))return; V&&(V.drag={x:e.clientX,last:e.clientX,t:performance.now()}); stage.setPointerCapture(e.pointerId); });
+  stage.addEventListener("pointermove",e=>{ if(!V||!V.drag)return; const dx=e.clientX-V.drag.last; V.drag.last=e.clientX; V.disc.rotation.y+=dx*0.012; V.vel=dx*0.012; });
+  const end=()=>{ if(V) V.drag=null; }; stage.addEventListener("pointerup",end); stage.addEventListener("pointercancel",end);
+  setNight(S.night);
+  const loop=()=>{ if(!V)return; V.t+=1;
+    if(!V.drag){ V.vel+= (base-V.vel)*0.03; V.disc.rotation.y+=V.vel; }
+    V.holder.rotation.z=Math.sin(V.t*0.008)*0.05; V.holder.position.y=-0.08+Math.sin(V.t*0.012)*0.02;
+    renderer.render(scene,cam); V.raf=requestAnimationFrame(loop); };
+  loop();
+}
+function setTheme(t){
+  S.theme=t; S.night=t==="night"; savePrefs();
+  const r=document.documentElement; r.classList.toggle("night",t==="night"); r.classList.toggle("light",t==="light");
+  document.querySelectorAll("[data-night]").forEach(b=>b.outerHTML=nightBtn());
+  const st=$(".stage"); if(st) st.classList.toggle("night",S.night);
+  const b=$("#nightBtn"); if(b){ b.textContent=S.night?"Lys på":"Slå av lyset"; b.setAttribute("aria-pressed",S.night); }
+  if(!V)return;
+  const on=S.night;
+  V.mTop.emissiveIntensity=on?0.75:0; V.mBot.emissiveIntensity=on?0.55:0;
+  V.hemi.intensity=on?0.08:0.95; V.dir.intensity=on?0.08:0.85; V.back.intensity=on?0.05:0.3;
+  V.shadow.visible=!on;
+}
+function setNight(on){ setTheme(on?"night":"light"); }
+
+/* ---------- Text helpers ---------- */
+const NUMINFO={
+ speed:{t:"Speed",min:1,max:14,lo:"Sakte",hi:"Rask",
+  why:"Kor fort disken må kastast for å fly som tenkt. Høgare speed betyr breiare rim og skarpare kant: disken kan gå lenger, men krev meir armfart.",
+  say:v=>v<=3?"Putter. Treng nesten ingen fart, så den er lett å kontrollere på korte kast og putting.":v<=5?"Midrange. Kontrollerte innspel på mellomdistanse.":v<=9?"Fairway driver. Lengde med kontroll; dei fleste kan kaste den på riktig fart.":"Distance driver. Gir mest lengde, men berre om du har armfart nok."},
+ glide:{t:"Glide",min:1,max:7,lo:"Landar fort",hi:"Svevar lenge",
+  why:"Evna disken har til å halde seg i lufta. Høg glide gir lengde nesten gratis. Låg glide gjer at disken landar tidlegare og er lettare å styre i vind.",
+  say:v=>v<=2?"Lite glide. Disken landar raskt og presist.":v<=4?"Moderat glide. Ein god balanse mellom lengde og kontroll.":"Mykje glide. Disken svevar lenge og hjelper deg å få lengde."},
+ turn:{t:"Turn",min:-5,max:1,lo:"−5",hi:"+1",
+  why:"Kva disken gjer i den første, raske delen av flukta. Negativ turn betyr at han svingar til høgre (for høgrehendt backhand). 0 betyr at han held linja.",
+  say:v=>v>=1?"Positiv turn. Disken vil til venstre allereie frå start; han motstår å svinge høgre.":v===0?"Ingen turn. Disken held linja i høg fart.":v>=-1?"Litt turn. Ein liten drift til høgre før han rettar seg opp.":v>=-2?"Tydeleg turn. Disken går ein del til høgre i første halvdel av flukta.":"Mykje turn. Disken svingar kraftig til høgre; bra for lange, svingande kast og nybyrjarar."},
+ fade:{t:"Fade",min:0,max:5,lo:"Rett avslutning",hi:"Kraftig hook",
+  why:"Kva disken gjer på slutten når farta døyr ut. Høg fade betyr at han hookar hardt til venstre (for høgrehendt backhand). 0 betyr at han landar rett fram.",
+  say:v=>v===0?"Ingen fade. Disken endar rett fram.":v<=1?"Lita fade. Ein forsiktig, føreseieleg avslutning til venstre.":v<=2?"Moderat fade. Ein tydeleg krok til venstre på slutten.":"Kraftig fade. Disken hookar hardt til venstre når farta døyr."}
+};
+function scaleBar(key,v){
+  const I=NUMINFO[key]; const p=(v-I.min)/(I.max-I.min)*100;
+  let fill;
+  if(key==="turn"){ const z=(0-I.min)/(I.max-I.min)*100; fill=`left:${Math.min(p,z)}%;width:${Math.abs(z-p)}%;background:var(--turn)`; }
+  else fill=`left:0;width:${p}%;${key==="fade"?"background:var(--fade)":""}`;
+  return `<div class="scale"><div class="fill" style="${fill}"></div><div class="dot" style="left:${p}%"></div></div><div class="scale-l"><span>${I.min} · ${I.lo}</span><span>${I.hi} · ${I.max}</span></div>`;
+}
+
+/* ---------- Views ---------- */
+const ICON_BACK=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>`;
+function sorted(){ return [...S.discs].sort((a,b)=>b.speed-a.speed||a.name.localeCompare(b.name)); }
+function modeNotice(){
+  if(S.error) return `<div class="notice err">${esc(S.error)}</div>`;
+  if(S.mode==="demo") return `<div class="notice">Demo med ${S.discs.length} oppdikta discar. Endringar blir ikkje lagra.</div>`;
+  if(S.mode==="local") return `<div class="notice">Endringar blir lagra berre i denne nettlesaren.</div>`;
+  if(S.mode==="readonly") return `<div class="notice">Du kan sjå baggen, men ikkje endre han.</div>`;
+  return "";
+}
+
+function bagHero(){
+  const all=sorted(); const arm=ARMS[S.arm].v;
+  const favs=all.filter(d=>d.fav);
+  const longest=all.map(d=>({d,D:flight(d,arm,S.hand).D})).sort((a,b)=>b.D-a.D)[0];
+  const cats=[["putter","Putter","putter","2 | 3 | 0 | 1"],["mid","Midrange","midrange","5 | 5 | 0 | 1"],["fairway","Fairway","fairway driver","7 | 5 | −1 | 1"],["distance","Distance","distance driver","10 | 5 | −1 | 2"]];
+  const cnt=k=>all.filter(d=>typeKey(d.speed)===k).length;
+  const missing=cats.filter(c=>!cnt(c[0]));
+  let tip;
+  if(!missing.length) tip="Baggen dekkjer alle fire disctypane.";
+  if(!favs.length&&all.length>5) tip+=" Trykk stjerna på ein disc for å feste han i vifta.";
+  else { const m=missing[0]; tip=`Baggen manglar ein <b>${m[2]}</b>. Ein stabil ${m[2]} rundt <b>${m[3]}</b> vil fylle hòlet.`;
+    if(missing.length>1) tip+=` Det manglar òg ${missing.slice(1).map(c=>c[2]).join(" og ")}.`; }
+  const fan=[...favs,...all.filter(d=>!d.fav)].slice(0,5).map((d,i)=>`<button class="fan-d" data-open="${esc(d.id)}" style="z-index:${10-i}" aria-label="Opne ${esc(d.name)}">${d.fav?`<span class="fanstar" aria-hidden="true">${ICON_STAR}</span>`:""}<img src="${thumbSrc(d)}" alt="" style="animation-duration:${16+i*6}s;${i%2?"animation-direction:reverse":""}"></button>`).join("");
+  return `<section class="hero" aria-label="Oversikt over baggen">
+    <div class="fan">${fan}</div>
+    <div class="stats"><div><b>${all.length}</b><small>disc${all.length===1?"":"ar"}</small></div><div><b>${Math.round(longest.D)}<span> m</span></b><small>lengst: ${esc(longest.d.name)}</small></div><div><b>${Math.min(...all.map(d=>d.speed))}–${Math.max(...all.map(d=>d.speed))}</b><small>speed-spenn</small></div></div>
+    <div class="slots">${cats.map(c=>{const n=cnt(c[0]);return `<div class="slot${n?"":" miss"}"><b>${n||"–"}</b><small>${c[1]}</small></div>`;}).join("")}</div>
+    <p class="tip">${tip}</p></section>`;
+}
+const ICON_SEARCH=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>`;
+const ICON_PLUS=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg>`;
+const ICON_CHECK=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 12.5l4 4 9-9"/></svg>`;
+const MAX_CMP=8;
+function layoutMode(){ return S.layout||(S.discs.length>20?"compact":"cards"); }
+function visibleDiscs(){
+  const q=S.q.trim().toLowerCase();
+  return sorted().filter(d=>(S.filter==="alle"||typeKey(d.speed)===S.filter)&&(!q||[d.name,d.brand,d.plastic].join(" ").toLowerCase().includes(q)));
+}
+function chartSet(){
+  S.cmp=S.cmp.filter(id=>S.discs.some(d=>d.id===id));
+  if(S.cmp.length) return {mode:"sel",list:S.cmp.map(id=>S.discs.find(d=>d.id===id))};
+  const vis=visibleDiscs();
+  if(vis.length<=MAX_CMP) return {mode:"vis",list:vis};
+  return {mode:"auto",list:["distance","fairway","mid","putter"].map(k=>vis.find(d=>typeKey(d.speed)===k)).filter(Boolean)};
+}
+function discRow(d,compact){
+  const ci=S.cmp.indexOf(d.id), sel=ci>=0, col=sel?LINE_COLORS[ci%LINE_COLORS.length]:"";
+  const nums=`<div class="nums" aria-label="Speed ${d.speed}, glide ${d.glide}, turn ${d.turn}, fade ${d.fade}"><span>${d.speed}</span><span>${d.glide}</span><span>${d.turn}</span><span>${d.fade}</span></div>`;
+  const main=compact
+    ? `<img class="thumb" src="${thumbSrc(d)}" alt="" loading="lazy"><div class="meta"><div class="name">${esc(d.name)}${d.fav?`<span class="favmark" role="img" aria-label="Favoritt">${ICON_STAR}</span>`:""}</div><div class="kind">${esc(d.brand)} · ${esc(d.plastic||"")}</div></div>${nums}`
+    : `<img class="thumb" src="${thumbSrc(d)}" alt="" loading="lazy"><div class="meta"><div class="name">${esc(d.name)}${d.fav?`<span class="favmark" aria-label="Favoritt">★</span>`:""}</div><div class="kind">${esc(d.brand)} · ${esc(d.plastic||"")} · ${discType(d.speed)}</div>${nums}</div>${miniSVG(d)}`;
+  return `<li><div class="disccard${sel?" sel":""}"${sel?` style="--sel:${col}"`:""}><button class="dc-main" data-open="${esc(d.id)}">${main}</button>
+    <button class="cmp" data-cmp="${esc(d.id)}" aria-pressed="${sel}" aria-label="${sel?"Fjern":"Legg til"} ${esc(d.name)} ${sel?"frå":"i"} samanlikninga">${sel?ICON_CHECK:ICON_PLUS}</button></div></li>`;
+}
+function renderBagList(){
+  const box=$("#bagList"); if(!box) return;
+  const vis=visibleDiscs(), compact=layoutMode()==="compact";
+  box.className="disclist"+(compact?" compact":"");
+  let h="";
+  if(!vis.length) h=`<li class="empty">${S.q?`Ingen discar passar til «${esc(S.q)}».`:"Ingen discar av denne typen enno."}</li>`;
+  else {
+    const groups=[["distance","Distance drivers"],["fairway","Fairway drivers"],["mid","Midrange"],["putter","Puttarar"]];
+    const grouped=vis.length>6;
+    groups.forEach(([k,label])=>{ const g=vis.filter(d=>typeKey(d.speed)===k); if(!g.length)return;
+      if(grouped) h+=`<li class="grp" aria-hidden="false"><span>${label}</span><span>${g.length}</span></li>`;
+      h+=g.map(d=>discRow(d,compact)).join(""); });
+  }
+  box.innerHTML=h;
+  const c=$("#bagCount"); if(c) c.textContent=vis.length===S.discs.length?`${vis.length} discar`:`Viser ${vis.length} av ${S.discs.length} discar`;
+}
+function renderBagChart(play){
+  const box=$("#bagChart"); if(!box) return;
+  const {mode,list}=chartSet();
+  if(!list.length){ box.innerHTML=`<p class="hintline" style="margin:0">Ingen discar å vise. Endre søket eller filteret.</p>`; return; }
+  const {svg}=flightSVG(list,{w:320,h:380});
+  let foot;
+  if(mode==="sel") foot=`<div class="cmpchips">${list.map((d,i)=>`<button class="cmpchip" data-cmp="${esc(d.id)}" aria-label="Fjern ${esc(d.name)} frå samanlikninga"><i style="background:${LINE_COLORS[i]}"></i>${esc(d.name)} ×</button>`).join("")}<button class="cmpchip clear" data-cmp-clear>Tøm</button></div>
+     <p class="hintline">${S.cmpMsg||`${list.length} av ${MAX_CMP} valt. Trykk + på fleire discar i lista for å leggje dei til.`}</p>`;
+  else foot=`<div class="legend">${list.map((d,i)=>`<span><i style="background:${LINE_COLORS[i]}"></i>${esc(d.name)}</span>`).join("")}</div>
+     <p class="hintline">${mode==="auto"?`Døme: éin disc av kvar type. Trykk + på discar i lista for å samanlikne dei du vil (opptil ${MAX_CMP}).`:(S.discs.length>1?"Viser alle discane i lista. Trykk + for å velje kva du vil samanlikne.":"")}</p>`;
+  box.innerHTML=`${throwHead(mode==="sel"?"Kast":"Kast alle")}${svg}${foot}${armControls()}`;
+  S.cmpMsg="";
+  if(play) playIn("#bagChart");
+}
+function viewBag(play=true){
+  $("#topbar").innerHTML=`<div style="flex:1;min-width:0"><div class="sub">Frisbeegolf</div><h1>Baggen min</h1></div>${S.mode==="readonly"?"":camBtn()}${nightBtn()}`;
+  if(S.mode==="loading"){ $("#main").innerHTML=`<div class="view"><div class="empty"><b>Hentar baggen …</b>Discane dine dukkar opp her.</div></div>`; return; }
+  const types=[["alle","Alle"],["distance","Distance"],["fairway","Fairway"],["mid","Midrange"],["putter","Puttarar"]];
+  let h=`<div class="view">${modeNotice()}`;
+  if(!S.discs.length){
+    h+=`<div class="empty"><b>Baggen er tom</b>Trykk «Legg til» nede, eller kamera-knappen øvst, for å legge inn den første discen din.</div></div>`;
+    $("#main").innerHTML=h; return;
+  }
+  const lm=layoutMode();
+  h+=bagHero();
+  h+=`<div class="bagtools"><label class="search">${ICON_SEARCH}<input id="bagQ" type="search" placeholder="Søk i baggen" aria-label="Søk etter namn, produsent eller plast" value="${esc(S.q)}" autocomplete="off"></label>
+    <div class="seg" role="group" aria-label="Listevising"><button data-layout="cards" aria-pressed="${lm==="cards"}">Kort</button><button data-layout="compact" aria-pressed="${lm==="compact"}">Kompakt</button></div></div>`;
+  h+=`<div class="chips" role="toolbar" aria-label="Filtrer etter type">${types.map(([k,l])=>`<button class="chip" data-filter="${k}" aria-pressed="${S.filter===k}">${l}</button>`).join("")}</div>`;
+  h+=`<div class="count" id="bagCount" aria-live="polite"></div><ul id="bagList" class="disclist"></ul>`;
+  h+=`<h3 class="section-h">Samanlikn flygelinjer</h3><div class="card" id="bagChart"></div></div>`;
+  $("#main").innerHTML=h;
+  renderBagList(); renderBagChart(play);
+}
+function toggleCmp(id){
+  const i=S.cmp.indexOf(id);
+  if(i>=0) S.cmp.splice(i,1);
+  else if(S.cmp.length>=MAX_CMP){ S.cmpMsg=`Du kan samanlikne opptil ${MAX_CMP} discar. Fjern ein før du legg til fleire.`; }
+  else S.cmp.push(id);
+  savePrefs();
+  renderBagList(); renderBagChart(false);
+}
+
+function armControls(){
+  const a=ARMS[S.arm];
+  return `<div class="controls">
+   <div class="seg" role="group" aria-label="Kasteteknikk"><button data-hand="rh" aria-pressed="${S.hand==="rh"}">Høgrehendt backhand</button><button data-hand="lh" aria-pressed="${S.hand==="lh"}">Venstre BH / høgre FH</button></div>
+   <div class="slider"><label for="arm">Kastekraft: ${a.label} <span>driver ${a.m}</span></label><input id="arm" type="range" min="0" max="4" step="1" value="${S.arm}"></div>
+  </div>`;
+}
+
+function flightCard(d){
+  const {svg,fl}=flightSVG([d],{single:true,w:320,h:400});
+  const f=fl[0].f, a=ARMS[S.arm];
+  let note;
+  if(f.a<0.85) note=`Med kastekraft «${a.label}» får du ikkje opp nok fart til speed ${d.speed}. Disken flyr kortare, svingar mindre og fadar tidlegare enn tala lovar.`;
+  else if(f.a>1.15) note=`Med kastekraft «${a.label}» kastar du hardare enn disken treng. Han vil svinge meir til ${S.hand==="rh"?"høgre":"venstre"} enn tala tilseier.`;
+  else note=`Kastekraft «${a.label}» passar godt til denne discen, så han flyr omtrent slik tala seier.`;
+  return `${throwHead("Kast igjen")}${svg}<div class="legend"><span><i style="background:var(--muted)"></i>Utkast</span><span><i style="background:var(--turn)"></i>Turn-fase (høg fart)</span><span><i style="background:var(--fade)"></i>Fade-fase (lågare fart)</span></div>
+     ${armControls()}<p class="notice" style="margin:10px 0 0">${note} Linja er sett ovanfrå, frå tee og framover. Sidevegs er skalaen forstørra.</p>`;
+}
+function viewDisc(id){
+  const d=S.discs.find(x=>x.id===id);
+  if(!d){ if(S.mode==="loading"){ $("#topbar").innerHTML=`<h1>Hentar …</h1>`; $("#main").innerHTML=""; return; } location.hash="#bag"; return; }
+  $("#topbar").innerHTML=`<a class="iconbtn" href="#bag" aria-label="Tilbake til baggen">${ICON_BACK}</a><h1 class="navtitle">${esc(d.name)}</h1>${S.mode==="readonly"?"":`<button class="iconbtn fav" data-fav="${esc(d.id)}" aria-pressed="${!!d.fav}" aria-label="Favoritt" title="Favoritt">${ICON_STAR}</button>`}${nightBtn()}`;
+  const canEdit=S.mode!=="readonly";
+  $("#main").innerHTML=`<div class="view">
+   <div class="stage" id="stage"><div class="tools"><button class="pill" id="nightBtn" aria-pressed="${S.night}">${S.night?"Lys på":"Slå av lyset"}</button></div><div class="hint">Dra for å snurre</div></div>
+   <div class="titleblock"><h2>${esc(d.name)}</h2><div class="kind">${discType(d.speed)} · ${esc(d.brand)}${d.weight?` · ${esc(d.weight)} g`:""}</div><span class="stab">${stability(d)}</span></div>
+   <div class="stamp" aria-label="Flygetal"><div><b>${d.speed}</b><small>Speed</small></div><div><b>${d.glide}</b><small>Glide</small></div><div><b>${d.turn}</b><small>Turn</small></div><div><b>${d.fade}</b><small>Fade</small></div></div>
+   <div class="card numexpl">${["speed","glide","turn","fade"].map(k=>`<div class="ne"><div class="big">${k==="turn"?fmtTurn(d[k]):d[k]}</div><div><h4>${NUMINFO[k].t}</h4><p>${NUMINFO[k].say(d[k])}</p>${scaleBar(k,d[k])}</div></div>`).join("")}</div>
+   <h3 class="section-h">Slik flyg han</h3>
+   <div class="card" id="flightCard">${flightCard(d)}</div>
+   ${d.desc?`<h3 class="section-h">Om discen</h3><p class="desc">${esc(d.desc)}</p>`:""}
+   ${canEdit?`<div class="actions"><a class="btn" style="text-align:center;text-decoration:none" href="#endre-${esc(d.id)}">Endre</a><button class="btn danger" id="delBtn">Fjern frå baggen</button></div><div id="confirmBox" hidden></div>`:""}
+  </div>`;
+  buildViewer($("#stage"),d);
+  playIn("#flightCard");
+  $("#nightBtn").onclick=()=>setNight(!S.night);
+  const del=$("#delBtn");
+  if(del) del.onclick=()=>{ const cb=$("#confirmBox"); cb.hidden=false; cb.innerHTML=`<div class="confirm"><span>Fjerne <b>${esc(d.name)}</b> frå baggen? Dette kan ikkje angrast.</span><div class="actions"><button class="btn" id="cNo">Avbryt</button><button class="btn primary" style="background:var(--warn);border-color:var(--warn)" id="cYes">Fjern</button></div></div>`;
+    $("#cNo").onclick=()=>{cb.hidden=true;}; $("#cYes").onclick=async()=>{ await removeDisc(d.id); location.hash="#bag"; }; };
+}
+
+function exampleSVG(kind){
+  const base={speed:7,glide:4,turn:0,fade:1};
+  const vals=kind==="turn"?[1,0,-2,-4]:kind==="fade"?[0,1,3,5]:kind==="glide"?[2,4,6]:[2,6,12];
+  const list=vals.map((v,i)=>({...base,[kind]:v,name:(kind==="turn"?fmtTurn(v):String(v)),id:"x"+i}));
+  const save=S.arm; if(kind==="speed") S.arm=4;
+  const {svg}=flightSVG(list,{w:320,h:260,static:true});
+  S.arm=save;
+  return svg.replace('class="flightsvg"','class="exsvg"')+`<div class="legend">${list.map((d,i)=>`<span><i style="background:${LINE_COLORS[i]}"></i>${esc(NUMINFO[kind].t)} ${esc(d.name)}</span>`).join("")}</div>`;
+}
+function viewTal(){
+  $("#topbar").innerHTML=`<div style="flex:1;min-width:0"><div class="sub">Slik les du discen</div><h1>Dei fire flygetala</h1></div>`;
+  const blocks=["speed","glide","turn","fade"].map((k,i)=>{
+    const I=NUMINFO[k];
+    const extra={
+      speed:`<ul><li>1–3: puttarar</li><li>4–5: midrange</li><li>6–9: fairway drivers</li><li>10–14: distance drivers</li></ul><p>Kastar du ein høg-speed-disc for sakte, får han aldri opp farta. Han går då ikkje lenger, men fadar berre tidleg til venstre. Mange nybyrjarar kastar lengre med ein fairway driver enn med ein speed 12.</p>`,
+      glide:`<p>Glide er det talet som mest direkte gir «gratis» lengde. I motvind kan mykje glide gjere at disken stig og blir vanskeleg å styre.</p>`,
+      turn:`<p>Turn og fade kjempar mot kvarandre. Ein disk med −2 turn og 2 fade går først litt til høgre og kjem så tilbake til venstre: den klassiske S-kurva.</p>`,
+      fade:`<p>Fade er det disken alltid gjer til slutt, uansett kor hardt du kastar. Mykje fade er nyttig rundt hjørne og i vind, lite fade gir rette landingar.</p>`
+    }[k];
+    return `<section class="card ex"><h3>${I.t} <small>${I.min} til ${k==="turn"?"+1":I.max}</small></h3><p>${I.why}</p>${extra}${exampleSVG(k)}</section>`;
+  }).join("");
+  $("#main").innerHTML=`<div class="view">
+   <div class="card ex"><p>Nesten alle discar har fire tal trykte på seg, til dømes <b>2 | 3 | 0 | 1</b> på ein Aviar. Tala står alltid i same rekkjefølgje: <b>speed, glide, turn, fade</b>. Saman beskriv dei korleis disken flyg når han blir kasta flatt med riktig fart.</p>
+   <p>Retningane gjeld for <b>høgrehendt backhand</b>. Kastar du venstrehendt backhand eller høgrehendt forehand, blir alt spegla: turn går til venstre og fade til høgre.</p></div>
+   ${blocks}
+   <section class="card ex"><h3>Stabilitet <small>turn + fade</small></h3><p>Legg du saman turn og fade, får du eit grovt mål på stabilitet. Høgt tal er <b>overstabilt</b> (vil til venstre, toler vind og harde kast). Lågt eller negativt tal er <b>understabilt</b> (vil til høgre, lett å få lengde med for nybyrjarar). Rundt 0–1 er <b>stabilt</b> og flyg rettast.</p></section>
+   <p class="notice">Grafane er ein forenkla modell for å vise kva tala betyr. Vind, vinkel, høgd og plast påverkar den verkelege flukta.</p>
+  </div>`;
+}
+
+const COLORS=["#e8c34a","#f2833b","#e5484d","#d6409f","#8e4ec6","#3e63dd","#0ea5b7","#30a46c","#abd490","#f5f2e8","#2b2b2b"];
+function viewForm(editId){
+  const d0=editId?S.discs.find(x=>x.id===editId):null;
+  if(editId&&!d0){ location.hash="#bag"; return; }
+  const d=d0?{...d0}:{name:"",brand:"",plastic:"",speed:7,glide:5,turn:-1,fade:1,color:"#e8c34a",desc:"",weight:""};
+  $("#topbar").innerHTML=d0?`<a class="iconbtn" href="#disc-${esc(d0.id)}" aria-label="Tilbake">${ICON_BACK}</a><div style="flex:1;min-width:0"><div class="sub">Endre</div><h1>${esc(d0.name)}</h1></div>`:`<div style="flex:1;min-width:0"><div class="sub">Ny i baggen</div><h1>Legg til disc</h1></div>`;
+  if(S.mode==="readonly"){ $("#main").innerHTML=`<div class="view">${modeNotice()}</div>`; return; }
+  $("#main").innerHTML=`<div class="view">${modeNotice()}<form id="f" novalidate>
+   <div class="photobox">
+     <img class="thumb" id="pv" alt="">
+     <div class="photoside"><div id="pvtxt" class="kind"></div>
+       <div class="photobtns"><button type="button" class="btn primary small" data-cam>${ICON_CAM}Ta bilde</button><button type="button" class="btn small" data-gallery>Vel frå galleri</button></div>
+       <button type="button" class="linkbtn" id="rmPhoto" ${d.photo?"":"hidden"}>Fjern biletet</button>
+     </div></div>
+   <div class="field"><label for="f-name">Namn</label><input id="f-name" required maxlength="40" value="${esc(d.name)}" placeholder="t.d. Leopard3"></div>
+   <div class="grid2"><div class="field"><label for="f-brand">Produsent</label><input id="f-brand" maxlength="40" value="${esc(d.brand)}" placeholder="t.d. Innova"></div>
+   <div class="field"><label for="f-plastic">Plast</label><input id="f-plastic" maxlength="40" value="${esc(d.plastic)}" placeholder="t.d. Star"></div></div>
+   <div class="field"><span style="font-size:13px;font-weight:700">Flygetal</span><div class="grid4">
+    ${[["speed",1,14,1],["glide",1,7,1],["turn",-5,1,0.5],["fade",0,5,0.5]].map(([k,mi,ma,st])=>`<div class="field"><input id="f-${k}" type="number" inputmode="decimal" min="${mi}" max="${ma}" step="${st}" value="${d[k]}"><label for="f-${k}">${NUMINFO[k].t}</label></div>`).join("")}
+   </div></div>
+   <div class="field"><span style="font-size:13px;font-weight:700">Farge</span><div class="colors" role="group" aria-label="Farge">${COLORS.map(c=>`<button type="button" data-color="${c}" style="background:${c}" aria-label="Farge ${c}" aria-pressed="${d.color===c}"></button>`).join("")}</div></div>
+   <div class="field"><label for="f-weight">Vekt (gram, valfritt)</label><input id="f-weight" type="number" inputmode="numeric" min="100" max="200" value="${esc(d.weight||"")}"></div>
+   <div class="field"><label for="f-desc">Notat</label><textarea id="f-desc" maxlength="800" placeholder="Kva brukar du han til?">${esc(d.desc)}</textarea></div>
+   <div id="ferr" class="notice err" hidden></div>
+   <div class="actions"><button class="btn primary" type="submit">${d0?"Lagre endringar":"Legg i baggen"}</button></div>
+  </form></div>`;
+  let color=d.color, photo=d.photo||null;
+  const read=()=>({...d,photo,name:$("#f-name").value.trim(),brand:$("#f-brand").value.trim(),plastic:$("#f-plastic").value.trim(),
+    speed:+$("#f-speed").value,glide:+$("#f-glide").value,turn:+$("#f-turn").value,fade:+$("#f-fade").value,color,
+    weight:$("#f-weight").value?+$("#f-weight").value:"",desc:$("#f-desc").value.trim()});
+  const pv=()=>{ const x=read(); const ok=[x.speed,x.glide,x.turn,x.fade].every(Number.isFinite);
+    $("#pv").src=thumbSrc({...x,name:x.name||"Disc"}); $("#pvtxt").textContent=ok?`${discType(x.speed)} · ${stability(x)}`:""; };
+  pv();
+  $("#f").addEventListener("input",pv);
+  const pickColor=c=>{ color=c; document.querySelectorAll("[data-color]").forEach(o=>o.setAttribute("aria-pressed",o.dataset.color===c)); };
+  S.onPhoto=(url,rim)=>{ photo=url; if(rim) pickColor(rim); $("#rmPhoto").hidden=false; pv(); };
+  $("#rmPhoto").onclick=()=>{ photo=null; $("#rmPhoto").hidden=true; pv(); };
+  if(S.pendingPhoto){ const src=S.pendingPhoto; S.pendingPhoto=null; openCropper(src); }
+  document.querySelectorAll("[data-color]").forEach(b=>b.onclick=()=>{color=b.dataset.color;document.querySelectorAll("[data-color]").forEach(o=>o.setAttribute("aria-pressed",o===b));pv();});
+  $("#f").addEventListener("submit",async e=>{
+    e.preventDefault(); const x=read(); const err=$("#ferr");
+    const bad=[]; if(!x.name)bad.push("Skriv inn eit namn.");
+    if(!(x.speed>=1&&x.speed<=14))bad.push("Speed må vere mellom 1 og 14.");
+    if(!(x.glide>=1&&x.glide<=7))bad.push("Glide må vere mellom 1 og 7.");
+    if(!(x.turn>=-5&&x.turn<=1))bad.push("Turn må vere mellom −5 og +1.");
+    if(!(x.fade>=0&&x.fade<=5))bad.push("Fade må vere mellom 0 og 5.");
+    if(bad.length){err.hidden=false;err.textContent=bad.join(" ");return;}
+    if(!d0){ x.id="d"+Date.now().toString(36)+Math.random().toString(36).slice(2,6); x.created=Date.now(); x.img=null; }
+    if(!x.photo) delete x.photo;
+    const ok=await saveDisc(x);
+    if(ok) location.hash="#disc-"+x.id; else {err.hidden=false;err.textContent=S.error||"Klarte ikkje å lagre. Prøv igjen.";}
+  });
+}
+
+const ICON_STAR=`<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3.2l2.6 5.5 6 .8-4.4 4.1 1.1 5.9L12 16.6l-5.3 2.9 1.1-5.9-4.4-4.1 6-.8z"/></svg>`;
+
+/* ---------- Camera + cropper ---------- */
+const ICON_CAM=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.6"/></svg>`;
+function camBtn(){ return `<button class="iconbtn" data-cam aria-label="Ta bilde av ein ny disc" title="Ta bilde av ein ny disc">${ICON_CAM}</button>`; }
+function onFilePicked(e){
+  const file=e.target.files&&e.target.files[0]; e.target.value="";
+  if(!file) return;
+  if(!/^image\//.test(file.type)){ S.error="Fila er ikkje eit bilete. Vel eit foto."; route(); return; }
+  const url=URL.createObjectURL(file);
+  const h=location.hash.slice(1);
+  if(h==="ny"||h.startsWith("endre-")) openCropper(url);
+  else { S.pendingPhoto=url; location.hash="#ny"; }
+}
+function openCropper(src){
+  const img=new Image();
+  img.onload=()=>buildCropper(img,src);
+  img.onerror=()=>{ URL.revokeObjectURL(src); const er=$("#ferr"); if(er){er.hidden=false;er.textContent="Klarte ikkje å lese biletet. Prøv eit anna foto.";} };
+  img.src=src;
+}
+function buildCropper(img,src){
+  const sheet=document.createElement("div"); sheet.className="sheet"; sheet.setAttribute("role","dialog"); sheet.setAttribute("aria-modal","true"); sheet.setAttribute("aria-label","Beskjer biletet");
+  sheet.innerHTML=`<p class="sheet-t">Flytt og zoom til disken fyller sirkelen</p>
+    <div class="crop"><canvas width="680" height="680"></canvas></div>
+    <label class="sheet-zoom" for="cropZoom">Zoom<input id="cropZoom" type="range" min="1" max="4" step="0.01" value="1"></label>
+    <div class="sheet-btns"><button class="btn" id="cropNo">Avbryt</button><button class="btn primary" id="cropYes">Bruk biletet</button></div>`;
+  document.body.appendChild(sheet);
+  const cv=sheet.querySelector("canvas"), ctx=cv.getContext("2d"), W=cv.width, R=W*0.46;
+  const base=Math.max((2*R)/img.naturalWidth,(2*R)/img.naturalHeight);
+  let z=1, ox=0, oy=0;
+  const sc=()=>base*z;
+  const limit=()=>{ const s=sc(), mx=Math.max(0,img.naturalWidth*s/2-R), my=Math.max(0,img.naturalHeight*s/2-R); ox=clamp(ox,-mx,mx); oy=clamp(oy,-my,my); };
+  const draw=()=>{ limit(); const s=sc();
+    ctx.fillStyle="#000"; ctx.fillRect(0,0,W,W);
+    ctx.drawImage(img,W/2-img.naturalWidth*s/2+ox,W/2-img.naturalHeight*s/2+oy,img.naturalWidth*s,img.naturalHeight*s);
+    ctx.save(); ctx.fillStyle="rgba(0,0,0,.6)"; ctx.beginPath(); ctx.rect(0,0,W,W); ctx.arc(W/2,W/2,R,0,Math.PI*2,true); ctx.fill("evenodd"); ctx.restore();
+    ctx.strokeStyle="#a6f07e"; ctx.lineWidth=3; ctx.setLineDash([14,10]); ctx.beginPath(); ctx.arc(W/2,W/2,R,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]); };
+  draw();
+  const zoomIn=sheet.querySelector("#cropZoom");
+  zoomIn.oninput=()=>{ z=+zoomIn.value; draw(); };
+  const ptrs=new Map(); let pinch=null;
+  const k=()=>W/cv.getBoundingClientRect().width;
+  cv.addEventListener("pointerdown",e=>{ cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(ptrs.size===2){ const [a,b]=[...ptrs.values()]; pinch={d:Math.hypot(a.x-b.x,a.y-b.y),z}; } });
+  cv.addEventListener("pointermove",e=>{ const p=ptrs.get(e.pointerId); if(!p)return;
+    if(ptrs.size===1){ ox+=(e.clientX-p.x)*k(); oy+=(e.clientY-p.y)*k(); }
+    p.x=e.clientX; p.y=e.clientY;
+    if(ptrs.size===2&&pinch){ const [a,b]=[...ptrs.values()]; z=clamp(pinch.z*Math.hypot(a.x-b.x,a.y-b.y)/pinch.d,1,4); zoomIn.value=z; }
+    draw(); });
+  const up=e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) pinch=null; };
+  cv.addEventListener("pointerup",up); cv.addEventListener("pointercancel",up);
+  cv.addEventListener("wheel",e=>{ e.preventDefault(); z=clamp(z*(e.deltaY<0?1.08:0.93),1,4); zoomIn.value=z; draw(); },{passive:false});
+  const close=()=>{ sheet.remove(); URL.revokeObjectURL(src); document.removeEventListener("keydown",esc_); };
+  const esc_=e=>{ if(e.key==="Escape") close(); };
+  document.addEventListener("keydown",esc_);
+  sheet.querySelector("#cropNo").onclick=close;
+  sheet.querySelector("#cropYes").onclick=()=>{
+    const O=512, f=O/(2*R), s=sc();
+    const out=document.createElement("canvas"); out.width=out.height=O; const o=out.getContext("2d");
+    o.fillStyle="#fff"; o.fillRect(0,0,O,O);
+    o.drawImage(img,(W/2-img.naturalWidth*s/2+ox-(W/2-R))*f,(W/2-img.naturalHeight*s/2+oy-(W/2-R))*f,img.naturalWidth*s*f,img.naturalHeight*s*f);
+    // average colour just inside the rim -> disc colour for the 3D edge
+    let r=0,g=0,b=0,n=0; const px=o.getImageData(0,0,O,O).data;
+    for(let i=0;i<48;i++){ const a=i/48*Math.PI*2, x=Math.round(O/2+Math.cos(a)*O*0.45), y=Math.round(O/2+Math.sin(a)*O*0.45), j=(y*O+x)*4; r+=px[j];g+=px[j+1];b+=px[j+2];n++; }
+    const rim="#"+[r,g,b].map(v=>Math.round(v/n).toString(16).padStart(2,"0")).join("");
+    let q=0.82, url=out.toDataURL("image/jpeg",q);
+    while(url.length>180000&&q>0.4){ q-=0.1; url=out.toDataURL("image/jpeg",q); }
+    close();
+    if(S.onPhoto) S.onPhoto(url,rim);
+  };
+  sheet.querySelector("#cropYes").focus();
+}
+
+/* ---------- Routing ---------- */
+function route(){
+  const h=location.hash.slice(1)||"bag";
+  if(!h.startsWith("disc-")) destroyViewer();
+  let tab="bag";
+  if(h==="tal"){tab="tal";viewTal();}
+  else if(h==="ny"){tab="ny";viewForm(null);}
+  else if(h.startsWith("endre-")){tab="ny";viewForm(h.slice(6));}
+  else if(h.startsWith("disc-")){viewDisc(h.slice(5));}
+  else viewBag();
+  document.querySelectorAll(".tabbar a").forEach(a=>{ if(a.dataset.tab===tab)a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); });
+}
+let lastHash=null;
+function onHash(){ if(location.hash!==lastHash) window.scrollTo(0,0); lastHash=location.hash; route(); }
+window.addEventListener("hashchange",onHash);
+
+document.addEventListener("click",e=>{
+  const fv=e.target.closest("[data-fav]"); if(fv){ const d=S.discs.find(x=>x.id===fv.dataset.fav); if(d){ const on=!d.fav; fv.setAttribute("aria-pressed",on); saveDisc({...d,fav:on}).then(ok=>{ if(!ok) fv.setAttribute("aria-pressed",!on); }); } return; }
+  const cb=e.target.closest("[data-cmp]"); if(cb){ toggleCmp(cb.dataset.cmp); return; }
+  if(e.target.closest("[data-cmp-clear]")){ S.cmp=[]; savePrefs(); renderBagList(); renderBagChart(false); return; }
+  const lb=e.target.closest("[data-layout]"); if(lb){ S.layout=lb.dataset.layout; savePrefs(); document.querySelectorAll("[data-layout]").forEach(b=>b.setAttribute("aria-pressed",b===lb)); renderBagList(); return; }
+  const o=e.target.closest("[data-open]"); if(o){ location.hash="#disc-"+o.dataset.open; return; }
+  const f=e.target.closest("[data-filter]"); if(f){ S.filter=f.dataset.filter; document.querySelectorAll("[data-filter]").forEach(b=>b.setAttribute("aria-pressed",b===f)); renderBagList(); renderBagChart(false); return; }
+  const th=e.target.closest("[data-throw]"); if(th){ const s=th.closest(".card").querySelector("svg.flightsvg"); s&&playFlight(s.id); return; }
+  if(e.target.closest("[data-cam]")){ $("#camIn").click(); return; }
+  if(e.target.closest("[data-gallery]")){ $("#galIn").click(); return; }
+  const nb=e.target.closest("[data-night]"); if(nb){ setTheme(isDarkNow()?"light":"night"); return; }
+  const hb=e.target.closest("[data-hand]"); if(hb){ S.hand=hb.dataset.hand; savePrefs(); rerenderKeepViewer(); }
+});
+document.addEventListener("input",e=>{ if(e.target.id==="bagQ"){ S.q=e.target.value; renderBagList(); renderBagChart(false); return; } if(e.target.id==="arm"){ S.arm=+e.target.value; savePrefs(); rerenderKeepViewer(); } });
+function rerenderKeepViewer(){
+  const h=location.hash.slice(1)||"bag"; const y=window.scrollY;
+  const fc=$("#flightCard");
+  if(h.startsWith("disc-")&&fc){ const d=S.discs.find(x=>x.id===h.slice(5)); if(d){ fc.innerHTML=flightCard(d); playIn("#flightCard"); } }
+  else if($("#bagChart")) renderBagChart(true);
+  else route();
+  window.scrollTo(0,y); const arm=$("#arm"); arm&&arm.focus({preventScroll:true});
+}
+
+/* ---------- Data ---------- */
+function loadLocal(){
+  S.mode="local";
+  try{ const raw=localStorage.getItem("discbag.discs"); S.discs=raw?JSON.parse(raw):DEFAULTS.slice(); }catch(e){ S.discs=DEFAULTS.slice(); }
+  route();
+}
+function demoDiscs(n){
+  let seed=7; const rnd=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; };
+  const pick=a=>a[Math.floor(rnd()*a.length)];
+  const A=["Fjord","Nordlys","Orkan","Falk","Ravn","Tind","Skred","Bølgje","Lyn","Storm","Elg","Ugle","Brann","Frost","Kjelde","Myr","Ørn","Gaupe","Bre","Vind"];
+  const B=["","X","Pro","Max","Lite","S","Ultra","Classic","Jr","Plus","Tour","II"];
+  const brands=["Testco","Demo Discs","Fiktiv Golf","Prøveplast"];
+  const plast=["Base","Premium","Glow","Flex","Shimmer"];
+  const types=[[2,3,0,1],[3,3,0,1],[4,4,0,1],[5,5,0,1],[5,4,0,3],[6,5,-1,1],[7,5,-1,2],[8,5,-2,1],[9,5,-1,2],[10,5,-2,2],[11,5,-1,3],[12,5,-1,3],[13,6,-2,2],[14,5,-1,3]];
+  const out=[], used=new Set();
+  for(let i=0;i<n;i++){
+    let name; do{ name=(pick(A)+" "+pick(B)).trim(); }while(used.has(name)); used.add(name);
+    const t=pick(types), j=v=>v+(rnd()<0.3?(rnd()<0.5?-1:1):0);
+    out.push({id:"demo"+i,name,brand:pick(brands),plastic:pick(plast),speed:clamp(t[0],1,14),glide:clamp(j(t[1]),1,7),turn:clamp(j(t[2]),-5,1),fade:clamp(j(t[3]),0,5),
+      color:pick(COLORS),created:i,img:null,desc:"Oppdikta demo-disc.",weight:150+Math.floor(rnd()*26)});
+  }
+  return out;
+}
+function persistLocal(){ if(S.mode==="demo")return; try{localStorage.setItem("discbag.discs",JSON.stringify(S.discs))}catch(e){} }
+async function saveDisc(x){
+  S.error="";
+  if(S.mode==="db"){
+    try{ const body={...x}; delete body.id; await S.db.collection("discs").doc(x.id).set(body); }
+    catch(e){ S.error=e&&e.code==="invalid_argument"?"Du har ikkje løyve til å endre denne baggen.":"Klarte ikkje å lagre discen. Prøv igjen om litt."; return false; }
+    const i=S.discs.findIndex(d=>d.id===x.id); if(i>=0)S.discs[i]=x; else S.discs.push(x);
+    return true;
+  }
+  const i=S.discs.findIndex(d=>d.id===x.id); if(i>=0)S.discs[i]=x; else S.discs.push(x); persistLocal(); return true;
+}
+async function removeDisc(id){
+  if(S.mode==="db"){ try{ await S.db.collection("discs").doc(id).delete(); }catch(e){ S.error="Klarte ikkje å fjerne discen."; return; } }
+  S.discs=S.discs.filter(d=>d.id!==id); if(S.mode==="local")persistLocal();
+}
+async function init(){
+  if(window.DISC_DEMO){ S.mode="demo"; S.discs=demoDiscs(window.DISC_DEMO); route(); return; }
+  route();
+  if(!window.claude||typeof window.claude.use!=="function"){ loadLocal(); return; }
+  let db=null; try{ db=await window.claude.use("db"); }catch(e){}
+  if(!db){ loadLocal(); return; }
+  S.db=db; S.mode="db";
+  try{ const u=await window.claude.use("user"); if(u&&typeof u.can==="function"){ const w=await u.can("data.write"); if(w===false) S.mode="readonly"; } }catch(e){}
+  const timer=setTimeout(()=>{ if(!S.discs.length){ S.error="Får ikkje kontakt med lagringa enno. Prøver vidare …"; route(); } },10000);
+  let first=true;
+  db.collection("discs").onSnapshot(snap=>{
+    S.discs=snap.docs.map(s=>({id:s.id,...s.data()}));
+    if(!snap.metadata.fromCache){ clearTimeout(timer); if(S.error.startsWith("Får ikkje"))S.error=""; }
+    const h=location.hash.slice(1)||"bag";
+    // Avoid wiping forms or the 3D view on live updates
+    if(first||h==="bag"||h===""||(h.startsWith("disc-")&&!V)) route();
+    first=false;
+  },err=>{ clearTimeout(timer); S.error="Mista kontakten med lagringa. Last sida på nytt for å prøve igjen."; route(); });
+}
+if(S.theme==="night") document.documentElement.classList.add("night");
+if(S.theme==="light") document.documentElement.classList.add("light");
+$("#camIn").addEventListener("change",onFilePicked);
+$("#galIn").addEventListener("change",onFilePicked);
+if(!location.hash) history.replaceState(null,"","#bag");
+lastHash=location.hash;
+init();
+</script>
