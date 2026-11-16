@@ -3,7 +3,7 @@
 Bruk:  python build.py            (byggjer discbag.html og discbag-demo.html)
        python build.py --bilete   (lagar også bilete/innebygde-bilete.json på nytt frå .webp-filene, krev Pillow)
 """
-import base64, io, json, sys
+import base64, hashlib, io, json, sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -56,6 +56,8 @@ def bygg():
             '<link rel="manifest" href="manifest.webmanifest?v=2">\n'
             '<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2">\n'
             '<link rel="icon" type="image/png" sizes="180x180" href="ikon-180.png?v=2">\n'
+            '<meta http-equiv="Cache-Control" content="no-cache">\n'
+            '__VERSJONSSJEKK__\n'
             '<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}'
             'body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>\n</head>\n<body>\n')
     foot = '\n</body>\n</html>\n'
@@ -66,6 +68,20 @@ def bygg():
     strip = lambda s: "\n".join(l for l in s.split("\n")
                                 if not l.startswith(('<link rel="apple-touch-icon"', '<link rel="icon"')))
     app, demo = strip(app), strip(demo)
+
+    # Alltid nyaste versjon: GitHub Pages mellomlagrar HTML i opptil 10 min. Sida spør derfor
+    # version.json (utan cache) ved opning og når appen kjem fram att, og lastar på nytt om
+    # det finst ein nyare versjon. ?v=<versjon> i adressa tvingar fram fersk HTML.
+    versjon = hashlib.sha1((app + demo).encode("utf-8")).hexdigest()[:10]
+    (ROOT / "version.json").write_text(json.dumps({"v": versjon}), encoding="utf-8")
+    sjekk = ('<script>window.APP_VERSION="%s";(function(){'
+             'function chk(){fetch("version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()})'
+             '.then(function(j){if(!j.v||j.v===window.APP_VERSION)return;var u=new URL(location.href);'
+             'if(u.searchParams.get("v")===j.v)return;u.searchParams.set("v",j.v);location.replace(u.toString())})'
+             '.catch(function(){})}'
+             'chk();document.addEventListener("visibilitychange",function(){if(!document.hidden)chk()});'
+             'window.addEventListener("pageshow",function(e){if(e.persisted)chk()})})();</script>') % versjon
+    head = head.replace("__VERSJONSSJEKK__", sjekk)
     (ROOT / "manifest.webmanifest").write_text(json.dumps({
         "name": "Discbaggen", "short_name": "Discbaggen", "start_url": "./", "display": "standalone",
         "background_color": "#f2f2f7", "theme_color": "#f2f2f7",
