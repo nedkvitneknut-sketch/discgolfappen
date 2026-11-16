@@ -43,7 +43,19 @@ def bygg():
     demo = (app.replace(meta, meta + "\n<script>window.DISC_DEMO=100</script>", 1)
                .replace("<title>Discbaggen</title>", "<title>Discbaggen demo</title>", 1))
     (ROOT / "discbag-demo.html").write_text(demo, encoding="utf-8")
-    print("Bygd: discbag.html og discbag-demo.html")
+
+    # GitHub Pages: frittståande sider med eige dokumentskal
+    head = ('<!doctype html>\n<html lang="nn">\n<head>\n<meta charset="utf-8">\n'
+            '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n'
+            '<meta name="theme-color" content="#f2f2f7">\n'
+            '<meta name="apple-mobile-web-app-capable" content="yes">\n'
+            '<meta name="apple-mobile-web-app-title" content="Discbaggen">\n'
+            '<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}'
+            'body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>\n</head>\n<body>\n')
+    foot = '\n</body>\n</html>\n'
+    (ROOT / "index.html").write_text(head + app + foot, encoding="utf-8")
+    (ROOT / "demo.html").write_text(head + demo + foot, encoding="utf-8")
+    print("Bygd: discbag.html, discbag-demo.html, index.html og demo.html")
 
 
 if __name__ == "__main__":
