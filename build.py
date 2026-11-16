@@ -53,12 +53,19 @@ def bygg():
             '<meta name="theme-color" content="#f2f2f7">\n'
             '<meta name="apple-mobile-web-app-capable" content="yes">\n'
             '<meta name="apple-mobile-web-app-title" content="Discbaggen">\n'
-            '<link rel="manifest" href="manifest.webmanifest">\n'
+            '<link rel="manifest" href="manifest.webmanifest?v=2">\n'
+            '<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2">\n'
+            '<link rel="icon" type="image/png" sizes="180x180" href="ikon-180.png?v=2">\n'
             '<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}'
             'body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>\n</head>\n<body>\n')
     foot = '\n</body>\n</html>\n'
     for f in ("ikon-180.png", "ikon-512.png"):
         (ROOT / f).write_bytes((IMG_DIR / f).read_bytes())
+    (ROOT / "apple-touch-icon.png").write_bytes((IMG_DIR / "ikon-180.png").read_bytes())
+    # iOS godtek ikkje data-URL-ikon i body; Pages-sidene brukar filene i <head> i staden
+    strip = lambda s: "\n".join(l for l in s.split("\n")
+                                if not l.startswith(('<link rel="apple-touch-icon"', '<link rel="icon"')))
+    app, demo = strip(app), strip(demo)
     (ROOT / "manifest.webmanifest").write_text(json.dumps({
         "name": "Discbaggen", "short_name": "Discbaggen", "start_url": "./", "display": "standalone",
         "background_color": "#f2f2f7", "theme_color": "#f2f2f7",
